@@ -1,1 +1,3 @@
-export default function BookingsPage() { return <div>Bookings</div> }
+export default function BookingsPage() {
+  return <div>Bookings</div>;
+}

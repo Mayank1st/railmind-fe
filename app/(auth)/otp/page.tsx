@@ -1,1 +1,3 @@
-export default function OtpPage() { return <div>OTP</div> }
+export default function OtpPage() {
+  return <div>OTP</div>;
+}

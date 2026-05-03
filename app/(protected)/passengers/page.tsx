@@ -1,1 +1,3 @@
-export default function PassengersPage() { return <div>Passengers</div> }
+export default function PassengersPage() {
+  return <div>Passengers</div>;
+}

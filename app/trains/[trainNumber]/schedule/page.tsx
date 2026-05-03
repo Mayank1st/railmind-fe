@@ -1,1 +1,3 @@
-export default function TrainSchedulePage() { return <div>Schedule</div> }
+export default function TrainSchedulePage() {
+  return <div>Schedule</div>;
+}

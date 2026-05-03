@@ -1,1 +1,3 @@
-export default function PnrPage() { return <div>PNR Status</div> }
+export default function PnrPage() {
+  return <div>PNR Status</div>;
+}

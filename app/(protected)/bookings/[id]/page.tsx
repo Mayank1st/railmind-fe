@@ -1,1 +1,3 @@
-export default function BookingDetailPage() { return <div>Booking Detail</div> }
+export default function BookingDetailPage() {
+  return <div>Booking Detail</div>;
+}

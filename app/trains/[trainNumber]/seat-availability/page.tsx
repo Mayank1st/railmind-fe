@@ -1,1 +1,3 @@
-export default function SeatAvailabilityPage() { return <div>Seat Availability</div> }
+export default function SeatAvailabilityPage() {
+  return <div>Seat Availability</div>;
+}
