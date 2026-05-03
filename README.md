@@ -1,40 +1,170 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# RailMind FE
+
+> AI-Powered Railway Reservation System — Frontend  
+> Built with Next.js 15, shadcn/ui, Tailwind CSS, TypeScript
+
+---
+
+## Tech Stack
+
+| Layer            | Technology                      |
+| ---------------- | ------------------------------- |
+| Framework        | Next.js 15 (App Router)         |
+| Language         | TypeScript                      |
+| UI Components    | shadcn/ui (Radix + Nova preset) |
+| Styling          | Tailwind CSS v4                 |
+| Icons            | Lucide React                    |
+| Font             | Geist                           |
+| State Management | Zustand                         |
+| Server State     | TanStack Query                  |
+| Forms            | react-hook-form + Zod           |
+| HTTP Client      | Axios                           |
+| Code Quality     | ESLint + Prettier + Husky       |
+
+---
+
+## Project Structure
+
+```
+railmind-fe/
+├── app/
+│   ├── (auth)/                 # Public auth pages — no guard
+│   │   ├── login/
+│   │   ├── register/
+│   │   └── otp/
+│   ├── (protected)/            # Auth required — redirects to /login
+│   │   ├── bookings/
+│   │   │   └── [id]/
+│   │   │       └── receipt/
+│   │   ├── passengers/
+│   │   └── profile/
+│   ├── trains/                 # Public train pages
+│   │   ├── search/
+│   │   └── [trainNumber]/
+│   │       ├── schedule/
+│   │       └── seat-availability/
+│   ├── pnr/
+│   │   └── [pnr]/              # Public PNR lookup
+│   ├── layout.tsx              # Root layout
+│   └── page.tsx                # Homepage — Train Search
+│
+├── components/
+│   ├── ui/                     # shadcn/ui components
+│   ├── layout/                 # Navbar, Footer, Sidebar
+│   ├── auth/                   # Login, Register, OTP forms
+│   ├── train/                  # SearchForm, TrainCard, Schedule
+│   ├── booking/                # BookingForm, BookingCard, FareSummary
+│   └── shared/                 # LoadingSpinner, ErrorMessage, EmptyState
+│
+├── lib/
+│   ├── api.ts                  # Axios instance with interceptors
+│   ├── auth.ts                 # Token/session helpers
+│   └── utils.ts                # Shared utilities
+│
+├── hooks/
+│   ├── useAuth.ts
+│   ├── useTrainSearch.ts
+│   └── useBooking.ts
+│
+├── types/
+│   ├── auth.ts
+│   ├── train.ts
+│   ├── booking.ts
+│   └── passenger.ts
+│
+├── store/
+│   └── authStore.ts            # Zustand global auth state
+│
+└── .vscode/
+    ├── settings.json           # Format on save, ESLint fix on save
+    └── extensions.json         # Recommended extensions
+```
+
+---
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 20+ (LTS recommended)
+- npm 10+
+- RailMind Backend running on `http://localhost:8000`
+
+### Installation
+
+```bash
+# Clone the repo
+git clone https://github.com/Mayank1st/railmind-fe.git
+cd railmind-fe
+
+# Install dependencies
+npm install
+
+# Setup environment variables
+cp .env.example .env.local
+# Edit .env.local with your values
+```
+
+### Environment Variables
+
+```bash
+# .env.local
+NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
+```
+
+### Run Development Server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## API Routes
 
-## Learn More
+All API calls go to the RailMind FastAPI backend.
 
-To learn more about Next.js, take a look at the following resources:
+| Frontend Route   | Backend Endpoint             |
+| ---------------- | ---------------------------- |
+| `/login`         | `POST /api/v1/auth/login`    |
+| `/register`      | `POST /api/v1/auth/register` |
+| `/trains/search` | `GET /api/v1/trains/search`  |
+| `/bookings`      | `GET /api/v1/bookings`       |
+| `/pnr/[pnr]`     | `GET /api/v1/pnr/{pnr}`      |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Development Workflow
 
-## Deploy on Vercel
+```bash
+# Start dev server
+npm run dev
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+# Format code
+npm run format
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+# Lint
+npm run lint
 
+# Build for production
+npm run build
+```
 
-## To share the folder structure
+Pre-commit hook automatically runs Prettier + ESLint on every commit.
+
+---
+
+## Related
+
+- [RailMind Backend](https://github.com/Mayank1st/railmind-be) — FastAPI backend
+- [RailMind PRD](./docs/PRD.md) — Product Requirements Document
+
+---
+
+## Folder Structure Command
+
+```bash
 find . -not -path './node_modules/*' -not -path './.git/*' -not -path './.next/*' | sort
+```
