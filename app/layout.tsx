@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
 import { Newsreader, IBM_Plex_Sans } from "next/font/google";
+import { cookies } from "next/headers";
 import "./globals.css";
 import Navbar from "@/components/layout/Navbar";
+import { AuthProvider } from "@/components/providers/AuthProvider";
+
+const AUTH_COOKIE = process.env.NEXT_PUBLIC_AUTH_COOKIE_NAME ?? "access_token";
 
 const newsreader = Newsreader({
   variable: "--font-newsreader",
@@ -20,19 +24,24 @@ export const metadata: Metadata = {
   description: "Book trains with AI-powered waitlist predictions",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = await cookies();
+  const initialAuthed = Boolean(cookieStore.get(AUTH_COOKIE)?.value);
+
   return (
     <html
       lang="en"
       className={`${newsreader.variable} ${ibmPlexSans.variable} dark h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
-        <Navbar />
-        {children}
+        <AuthProvider initialAuthed={initialAuthed}>
+          <Navbar />
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );
