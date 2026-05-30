@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Search, ArrowRight, MapPin, CalendarIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Search, ArrowRight, CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -18,62 +19,108 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import StationInput from "@/components/train/StationInput";
 
-export default function SearchForm() {
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
-  const [date, setDate] = useState<Date>();
-  const [trainClass, setTrainClass] = useState("SL");
-  const [quota, setQuota] = useState("GN");
+export type SearchFormDefaults = {
+  fromCode?: string;
+  fromDisplay?: string;
+  toCode?: string;
+  toDisplay?: string;
+  date?: Date;
+  trainClass?: string;
+  quota?: string;
+};
+
+type SearchFormProps = {
+  defaults?: SearchFormDefaults;
+  onSubmitted?: () => void;
+  className?: string;
+};
+
+export default function SearchForm({
+  defaults,
+  onSubmitted,
+  className,
+}: SearchFormProps = {}) {
+  const router = useRouter();
+  const [fromCode, setFromCode] = useState(defaults?.fromCode ?? "");
+  const [fromDisplay, setFromDisplay] = useState(defaults?.fromDisplay ?? "");
+  const [toCode, setToCode] = useState(defaults?.toCode ?? "");
+  const [toDisplay, setToDisplay] = useState(defaults?.toDisplay ?? "");
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [date, setDate] = useState<Date | undefined>(defaults?.date);
+  const [trainClass, setTrainClass] = useState(defaults?.trainClass ?? "SL");
+  const [quota, setQuota] = useState(defaults?.quota ?? "GN");
+
+  const handleSearch = () => {
+    if (!fromCode || !toCode) return;
+
+    const params = new URLSearchParams({
+      from: fromCode,
+      to: toCode,
+      class: trainClass,
+      quota: quota,
+      hours: "48",
+    });
+
+    if (date) {
+      params.set("date", format(date, "yyyy-MM-dd"));
+    }
+    router.push(`/trains/search?${params.toString()}`);
+    onSubmitted?.();
+  };
 
   return (
-    <div className="mt-12 rounded-2xl border border-white/10 bg-[#1e1e1c] p-6">
+    <div
+      className={
+        className ?? "mt-12 rounded-2xl border border-white/10 bg-[#1e1e1c] p-6"
+      }
+    >
       <div className="flex items-end gap-3">
         {/* FROM */}
-        <div className="flex-1">
-          <label className="mb-2 block text-xs font-medium tracking-wider text-white/40 uppercase">
-            From
-          </label>
-          <div className="flex items-center gap-2 rounded-lg bg-[#2a2a28] px-4 py-3">
-            <input
-              type="text"
-              placeholder="Source station"
-              value={from}
-              onChange={(e) => setFrom(e.target.value)}
-              className="text-foreground flex-1 bg-transparent text-sm outline-none placeholder:text-white/90"
-            />
-            <MapPin className="h-4 w-4 text-white/40" />
-          </div>
-        </div>
+        <StationInput
+          label="From"
+          value={fromCode}
+          displayValue={fromDisplay}
+          onChange={(code, name) => {
+            setFromCode(code);
+            setFromDisplay(`${code} · ${name}`);
+          }}
+          placeholder="Source station"
+        />
 
         {/* Swap button */}
-        <button className="mb-1 flex h-8 w-8 items-center justify-center rounded-full border border-white/10 text-white/40 hover:text-white">
+        <button
+          type="button"
+          onClick={() => {
+            setFromCode(toCode);
+            setFromDisplay(toDisplay);
+            setToCode(fromCode);
+            setToDisplay(fromDisplay);
+          }}
+          className="mb-1 flex h-8 w-8 items-center justify-center rounded-full border border-white/10 text-white/40 hover:text-white"
+        >
           <ArrowRight className="h-4 w-4" />
         </button>
 
         {/* TO */}
-        <div className="flex-1">
-          <label className="mb-2 block text-xs font-medium tracking-wider text-white/40 uppercase">
-            To
-          </label>
-          <div className="flex items-center gap-2 rounded-lg bg-[#2a2a28] px-4 py-3">
-            <input
-              type="text"
-              placeholder="Destination station"
-              value={to}
-              onChange={(e) => setTo(e.target.value)}
-              className="text-foreground flex-1 bg-transparent text-sm outline-none placeholder:text-white/90"
-            />
-            <MapPin className="h-4 w-4 text-white/30" />
-          </div>
-        </div>
+        <StationInput
+          label="To"
+          value={toCode}
+          displayValue={toDisplay}
+          onChange={(code, name) => {
+            setToCode(code);
+            setToDisplay(`${code} · ${name}`);
+          }}
+          placeholder="Destination station"
+        />
 
         {/* JOURNEY DATE */}
         <div className="w-52">
           <label className="mb-2 block text-xs font-medium tracking-wider text-white/40 uppercase">
             Journey Date
           </label>
-          <Popover>
+          <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
             <PopoverTrigger asChild>
               <Button
                 variant="ghost"
@@ -88,14 +135,17 @@ export default function SearchForm() {
               <Calendar
                 mode="single"
                 selected={date}
-                onSelect={setDate}
+                onSelect={(d) => {
+                  setDate(d);
+                  setCalendarOpen(false); // ← select hone pe close
+                }}
                 disabled={(d) => d < new Date()}
               />
             </PopoverContent>
           </Popover>
         </div>
 
-        {/* CLASS — w-28 se w-36 */}
+        {/* CLASS */}
         <div className="w-36">
           <label className="mb-2 block text-xs font-medium tracking-wider text-white/40 uppercase">
             Class
@@ -119,7 +169,7 @@ export default function SearchForm() {
           </Select>
         </div>
 
-        {/* QUOTA — w-32 se w-40 */}
+        {/* QUOTA */}
         <div className="w-40">
           <label className="mb-2 block text-xs font-medium tracking-wider text-white/40 uppercase">
             Quota
@@ -142,7 +192,10 @@ export default function SearchForm() {
         </div>
 
         {/* SEARCH BUTTON */}
-        <button className="bg-accent-warm flex cursor-pointer items-center gap-2 rounded-xl px-6 py-3 font-medium text-white hover:opacity-90">
+        <button
+          onClick={handleSearch}
+          className="bg-accent-warm flex cursor-pointer items-center gap-2 rounded-xl px-6 py-3 font-medium text-white hover:opacity-90"
+        >
           <Search className="h-4 w-4" />
           Search
         </button>
@@ -170,11 +223,27 @@ export default function SearchForm() {
 
         <div className="text-sm text-white/40">
           Recent:{" "}
-          <span className="text-accent-warm cursor-pointer hover:underline">
+          <span
+            onClick={() => {
+              setFromCode("BCT");
+              setFromDisplay("BCT · MUMBAI CENTR");
+              setToCode("NDLS");
+              setToDisplay("NDLS · NEW DELHI");
+            }}
+            className="text-accent-warm cursor-pointer hover:underline"
+          >
             BCT → NDLS
           </span>
           {" · "}
-          <span className="text-accent-warm cursor-pointer hover:underline">
+          <span
+            onClick={() => {
+              setFromCode("SBC");
+              setFromDisplay("SBC · KSR BENGALURU");
+              setToCode("MAS");
+              setToDisplay("MAS · CHENNAI CTRL");
+            }}
+            className="text-accent-warm cursor-pointer hover:underline"
+          >
             SBC → MAS
           </span>
         </div>

@@ -3,9 +3,59 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { LogOut } from "lucide-react";
+import {
+  Bell,
+  ChevronDown,
+  LogOut,
+  Ticket,
+  User as UserIcon,
+  Users,
+} from "lucide-react";
 import { useAuthStore } from "@/store/auth";
 import { authApi } from "@/lib/auth";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+function getInitials(
+  firstName?: string | null,
+  lastName?: string | null,
+  email?: string | null
+) {
+  const f = (firstName ?? "").trim();
+  const l = (lastName ?? "").trim();
+  if (f && l) return (f[0] + l[0]).toUpperCase();
+  if (f) return f.slice(0, 2).toUpperCase();
+  if (l) return l.slice(0, 2).toUpperCase();
+  if (email) return email.slice(0, 2).toUpperCase();
+  return "U";
+}
+
+function getDisplayName(firstName?: string | null, email?: string | null) {
+  const f = (firstName ?? "").trim();
+  if (f) return f;
+  if (email) return email.split("@")[0];
+  return "Account";
+}
+
+function getFullName(
+  firstName?: string | null,
+  lastName?: string | null,
+  email?: string | null
+) {
+  const composed = [firstName, lastName]
+    .map((p) => (p ?? "").trim())
+    .filter(Boolean)
+    .join(" ");
+  if (composed) return composed;
+  return getDisplayName(firstName, email);
+}
 
 const navLinks = [
   { label: "Search", href: "/" },
@@ -81,22 +131,78 @@ export default function Navbar() {
           </button>
 
           {status === "loading" ? (
-            <div className="h-8 w-32 animate-pulse rounded-lg bg-white/5" />
-          ) : status === "authed" ? (
-            <div className="flex items-center gap-3">
-              {user?.full_name && (
-                <span className="text-sm font-normal text-white/70">
-                  Hi, {user.full_name.split(" ")[0]}
-                </span>
-              )}
+            <div className="h-9 w-40 animate-pulse rounded-full bg-white/5" />
+          ) : status === "authed" && user ? (
+            <>
               <button
-                onClick={handleLogout}
-                className="flex cursor-pointer items-center gap-2 rounded-lg border border-white/15 px-4 py-2 text-sm font-medium text-white/80 hover:border-white/25 hover:text-white"
+                type="button"
+                aria-label="Notifications"
+                className="relative flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-white/70 hover:bg-white/5 hover:text-white"
               >
-                <LogOut className="h-4 w-4" />
-                Logout
+                <Bell className="h-5 w-5" />
               </button>
-            </div>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    className="flex cursor-pointer items-center gap-2 rounded-full border border-white/10 py-1 pr-3 pl-1 text-sm text-white/90 hover:border-white/20 hover:bg-white/[0.03] focus:outline-none"
+                  >
+                    <Avatar className="size-7">
+                      <AvatarFallback className="bg-[#d6a572] text-[11px] font-semibold text-[#3d2817]">
+                        {getInitials(
+                          user.first_name,
+                          user.last_name,
+                          user.email
+                        )}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="font-normal">
+                      {getDisplayName(user.first_name, user.email)}
+                    </span>
+                    <ChevronDown className="h-4 w-4 text-white/50" />
+                  </button>
+                </DropdownMenuTrigger>
+
+                <DropdownMenuContent
+                  align="end"
+                  sideOffset={8}
+                  className="w-60"
+                >
+                  <DropdownMenuLabel className="flex flex-col gap-0.5 px-2 py-2">
+                    <span className="text-foreground text-sm font-medium">
+                      {getFullName(user.first_name, user.last_name, user.email)}
+                    </span>
+                    {user.email && (
+                      <span className="text-muted-foreground truncate text-xs font-normal">
+                        {user.email}
+                      </span>
+                    )}
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onSelect={() => router.push("/profile")}>
+                    <UserIcon />
+                    Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => router.push("/bookings")}>
+                    <Ticket />
+                    My Bookings
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => router.push("/passengers")}>
+                    <Users />
+                    Saved Passengers
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    variant="destructive"
+                    onSelect={handleLogout}
+                  >
+                    <LogOut />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </>
           ) : (
             <>
               <Link

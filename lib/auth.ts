@@ -2,7 +2,8 @@ import { api } from "./api";
 
 export type User = {
   id: string;
-  full_name: string;
+  first_name: string;
+  last_name: string;
   email: string;
   mobile?: string;
   gender?: "female" | "male" | "other";
@@ -19,7 +20,8 @@ export type LoginOtpRequestPayload = { email: string };
 export type OtpVerifyPayload = { email: string; code: string };
 
 export type RegisterPayload = {
-  full_name: string;
+  first_name: string;
+  last_name: string;
   date_of_birth: string;
   email: string;
   country_code: string;
@@ -29,19 +31,19 @@ export type RegisterPayload = {
 };
 
 export const authApi = {
-  me: () => api.get<User>("/auth/me").then((r) => r.data),
+  me: () => api.get("/auth/me").then((r) => r.data.data),
 
   loginPassword: (payload: LoginPasswordPayload) =>
-    api.post<User>("/auth/login", payload).then((r) => r.data),
+    api.post("/auth/login", payload).then((r) => r.data.data),
 
   requestOtp: (payload: LoginOtpRequestPayload) =>
-    api.post<{ ok: true }>("/auth/otp/send", payload).then((r) => r.data),
+    api.post("/auth/otp/send", payload).then((r) => r.data),
 
   verifyOtp: (payload: OtpVerifyPayload) =>
-    api.post<User>("/auth/otp/verify", payload).then((r) => r.data),
+    api.post("/auth/otp/verify", payload).then((r) => r.data.data),
 
   register: (payload: RegisterPayload) =>
-    api.post<{ ok: true }>("/auth/register", payload).then((r) => r.data),
+    api.post("/auth/register", payload).then((r) => r.data),
 
-  logout: () => api.post<{ ok: true }>("/auth/logout").then((r) => r.data),
+  logout: () => api.post("/auth/logout").then((r) => r.data),
 };

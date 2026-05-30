@@ -21,7 +21,8 @@ import {
 
 const registerSchema = z
   .object({
-    full_name: z.string().min(2, "Name must be at least 2 characters"),
+    first_name: z.string().min(1, "First name is required"),
+    last_name: z.string().min(1, "Last name is required"),
     date_of_birth: z.string().min(1, "Date of birth is required"),
     email: z.string().email("Invalid email address"),
     country_code: z.string(),
@@ -200,38 +201,55 @@ export default function RegisterPage() {
 
             {/* Form */}
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              {/* Full Name + DOB */}
+              {/* First Name + Last Name */}
               <div className="flex gap-3">
                 <div className="flex-1">
                   <label className="mb-1.5 block text-xs font-medium tracking-wider text-white/40 uppercase">
-                    Full Name
+                    First Name
                   </label>
                   <input
-                    {...register("full_name")}
-                    placeholder="Ananya Sharma"
+                    {...register("first_name")}
+                    placeholder="Ananya"
                     className="text-foreground w-full rounded-lg bg-[#2a2a28] px-4 py-3 text-sm outline-none placeholder:text-white/30"
                   />
-                  {errors.full_name && (
+                  {errors.first_name && (
                     <p className="mt-1 text-xs text-red-400">
-                      {errors.full_name.message}
+                      {errors.first_name.message}
                     </p>
                   )}
                 </div>
-                <div className="w-40">
+                <div className="flex-1">
                   <label className="mb-1.5 block text-xs font-medium tracking-wider text-white/40 uppercase">
-                    Date of Birth
+                    Last Name
                   </label>
                   <input
-                    {...register("date_of_birth")}
-                    placeholder="14 / 06 / 1993"
+                    {...register("last_name")}
+                    placeholder="Sharma"
                     className="text-foreground w-full rounded-lg bg-[#2a2a28] px-4 py-3 text-sm outline-none placeholder:text-white/30"
                   />
-                  {errors.date_of_birth && (
+                  {errors.last_name && (
                     <p className="mt-1 text-xs text-red-400">
-                      {errors.date_of_birth.message}
+                      {errors.last_name.message}
                     </p>
                   )}
                 </div>
+              </div>
+
+              {/* Date of Birth */}
+              <div>
+                <label className="mb-1.5 block text-xs font-medium tracking-wider text-white/40 uppercase">
+                  Date of Birth
+                </label>
+                <input
+                  {...register("date_of_birth")}
+                  placeholder="14 / 06 / 1993"
+                  className="text-foreground w-full rounded-lg bg-[#2a2a28] px-4 py-3 text-sm outline-none placeholder:text-white/30"
+                />
+                {errors.date_of_birth && (
+                  <p className="mt-1 text-xs text-red-400">
+                    {errors.date_of_birth.message}
+                  </p>
+                )}
               </div>
 
               {/* Email */}
