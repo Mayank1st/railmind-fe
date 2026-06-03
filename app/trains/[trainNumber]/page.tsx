@@ -217,7 +217,7 @@ export default function TrainDetailPage() {
   if (scheduleLoading || detailsLoading) {
     return (
       <main className="min-h-screen bg-[#1a1a18]">
-        <div className="mx-auto max-w-[1400px] px-6 py-8">
+        <div className="app-container py-8">
           <div className="space-y-4">
             <div className="h-6 w-32 animate-pulse rounded bg-white/5" />
             <div className="h-48 animate-pulse rounded-xl bg-white/5" />
@@ -257,7 +257,7 @@ export default function TrainDetailPage() {
 
   return (
     <main className="min-h-screen bg-[#1a1a18]">
-      <div className="mx-auto max-w-[1400px] px-6 py-6">
+      <div className="app-container py-6">
         {/* ── Back link ── */}
         <button
           onClick={handleBack}

@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 
 const AUTH_COOKIE = process.env.NEXT_PUBLIC_AUTH_COOKIE_NAME ?? "access_token";
 
-const PROTECTED_PATHS = ["/bookings", "/profile"];
+const PROTECTED_PATHS = ["/bookings", "/profile", "/passengers", "/book"];
 const AUTH_PATHS = ["/login", "/register", "/otp"];
 
 export function proxy(request: NextRequest) {
@@ -38,6 +38,8 @@ export const config = {
   matcher: [
     "/bookings/:path*",
     "/profile/:path*",
+    "/passengers/:path*",
+    "/book/:path*",
     "/login",
     "/register",
     "/otp",

@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { useAuthStore } from "@/store/auth";
 import { authApi } from "@/lib/auth";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -84,7 +84,7 @@ export default function Navbar() {
 
   return (
     <nav className="border-b border-white/10 bg-[#121713] font-bold">
-      <div className="mx-auto flex max-w-[1600px] items-center justify-between px-12 py-3">
+      <div className="app-container flex items-center justify-between py-3">
         {/* ── LEFT GROUP: logo + nav links ── */}
         <div className="flex items-center gap-10">
           <Link href="/" className="flex items-center gap-3">
@@ -149,6 +149,12 @@ export default function Navbar() {
                     className="flex cursor-pointer items-center gap-2 rounded-full border border-white/10 py-1 pr-3 pl-1 text-sm text-white/90 hover:border-white/20 hover:bg-white/[0.03] focus:outline-none"
                   >
                     <Avatar className="size-7">
+                      {user.profile_photo && (
+                        <AvatarImage
+                          src={user.profile_photo}
+                          alt={getDisplayName(user.first_name, user.email)}
+                        />
+                      )}
                       <AvatarFallback className="bg-[#d6a572] text-[11px] font-semibold text-[#3d2817]">
                         {getInitials(
                           user.first_name,

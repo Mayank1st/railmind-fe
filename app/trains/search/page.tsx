@@ -221,12 +221,12 @@ export default function TrainSearchPage() {
   if (isLoading) {
     return (
       <main className="min-h-screen bg-[#1a1a18]">
-        <div className="border-b border-white/10 bg-[#1e1e1c] px-16 py-4">
-          <div className="mx-auto max-w-[1400px]">
+        <div className="border-b border-white/10 bg-[#1e1e1c] py-4">
+          <div className="app-container">
             <div className="h-6 w-96 animate-pulse rounded bg-white/5" />
           </div>
         </div>
-        <div className="mx-auto flex max-w-[1400px] gap-12 px-6 py-8">
+        <div className="app-container flex gap-12 py-8">
           <div className="w-64 shrink-0">
             <div className="h-96 animate-pulse rounded-xl bg-white/5" />
           </div>
@@ -263,7 +263,7 @@ export default function TrainSearchPage() {
     <main className="min-h-screen bg-[#1a1a18]">
       {/* ── TOP BAR — Route info ── */}
       <div className="sticky top-0 z-20 bg-[#1a1a18]">
-        <div className="mx-auto max-w-[1400px] px-6 py-4">
+        <div className="app-container py-4">
           <div className="flex items-center justify-between rounded-xl border border-white/10 bg-[#121713] px-5 py-3">
             <div className="text-foreground flex items-center gap-3 text-sm">
               <MapPin className="text-foreground/50 h-4 w-4" />
@@ -290,7 +290,7 @@ export default function TrainSearchPage() {
         </div>
       </div>
 
-      <div className="mx-auto flex max-w-[1400px] gap-12 px-6 py-6">
+      <div className="app-container flex gap-12 py-6">
         {/* ── LEFT SIDEBAR — Filters ── */}
         <aside className="sticky top-24 w-64 shrink-0 self-start">
           <div className="max-h-[calc(100vh-7rem)] overflow-y-auto rounded-xl border border-white/10 bg-[#1e1e1c] p-5">
@@ -547,6 +547,21 @@ function TrainCard({
     router.push(`/trains/${train.train_number}?${qs.toString()}`);
   };
 
+  const goToBooking = (classCode: string) => {
+    const qs = new URLSearchParams({
+      train: train.train_number,
+      name: train.train_name,
+      from: train.from_station,
+      to: train.to_station,
+      dep: train.departs ?? "",
+      arr: train.arrives ?? "",
+      class: classCode,
+      quota,
+      ...(date ? { date } : {}),
+    });
+    router.push(`/book/passengers?${qs.toString()}`);
+  };
+
   const badgeClass =
     trainTypeBadge[train.train_type] ?? "bg-gray-500/20 text-gray-400";
 
@@ -671,13 +686,39 @@ function TrainCard({
                     const avail = seatData?.classes?.find(
                       (s) => s.class_code === c
                     );
+                    const bookable = avail?.status === "AVL";
                     return (
                       <div
                         key={c}
-                        className={`flex-1 rounded-lg border px-3 py-2.5 ${
+                        role={bookable ? "button" : undefined}
+                        tabIndex={bookable ? 0 : undefined}
+                        title={bookable ? "Book this class" : undefined}
+                        onClick={
+                          bookable
+                            ? (e) => {
+                                e.stopPropagation();
+                                goToBooking(c);
+                              }
+                            : undefined
+                        }
+                        onKeyDown={
+                          bookable
+                            ? (e) => {
+                                if (e.key === "Enter" || e.key === " ") {
+                                  e.preventDefault();
+                                  goToBooking(c);
+                                }
+                              }
+                            : undefined
+                        }
+                        className={`flex-1 rounded-lg border px-3 py-2.5 transition-colors ${
                           c === selectedClass
                             ? "border-accent-warm/30 bg-accent-warm/10"
                             : "border-white/5 bg-white/[0.02]"
+                        } ${
+                          bookable
+                            ? "cursor-pointer hover:border-emerald-400/40 hover:bg-emerald-400/[0.06] focus-visible:border-emerald-400/50 focus-visible:outline-none"
+                            : ""
                         }`}
                       >
                         <p className="text-foreground/40 text-xs">{c}</p>

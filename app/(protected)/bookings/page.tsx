@@ -60,7 +60,7 @@ export default function BookingsPage() {
   const recent = past.data?.journeys.slice(0, 5) ?? [];
 
   return (
-    <div className="mx-auto max-w-[1600px] px-12 py-10">
+    <div className="app-container-narrow py-10">
       <Greeting firstName={firstName} />
 
       <section className="mt-8">

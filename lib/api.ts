@@ -9,6 +9,26 @@ export const api = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
+// Global session guard: if a request comes back 401 (token expired / session
+// revoked while the user is active), bounce to /login with a `next` so they
+// return where they were. Skips /auth/* calls (e.g. the /auth/me guest-check
+// and login failures handle their own 401s) and avoids redirect loops.
+api.interceptors.response.use(
+  (response) => response,
+  (error: AxiosError) => {
+    if (typeof window !== "undefined" && error.response?.status === 401) {
+      const url = error.config?.url ?? "";
+      const isAuthCall = url.includes("/auth/");
+      const onLoginPage = window.location.pathname.startsWith("/login");
+      if (!isAuthCall && !onLoginPage) {
+        const next = window.location.pathname + window.location.search;
+        window.location.assign(`/login?next=${encodeURIComponent(next)}`);
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 export type ApiError = {
   status: number;
   message: string;

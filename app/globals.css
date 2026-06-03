@@ -71,6 +71,17 @@
   --ring: oklch(0.65 0.15 60); /* amber focus ring */
   --radius: 0.625rem;
 
+  /* ── App layout — single source of truth for page gutters ──
+     Change these two values to retune horizontal spacing app-wide.
+     Used by the `app-container` utility (navbar + every full-width page). */
+  --app-max-width: 1600px; /* wide shell — list/grid pages (home, search, bookings); navbar aligns to this */
+  --app-max-width-narrow: 1360px; /* narrow reading column — account/detail pages (profile) with more side breathing room */
+  --app-gutter: clamp(
+    1.25rem,
+    4vw,
+    3rem
+  ); /* responsive side padding, caps at 48px (= px-12) on desktop */
+
   /* Charts — same rakhte hain */
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
@@ -139,4 +150,25 @@
   h6 {
     font-family: var(--font-newsreader), serif;
   }
+}
+
+/* ── Global page container ──
+   Apply `app-container` to any full-width page shell (and the navbar) so
+   every page shares the same max-width and left/right gutters. This keeps
+   page content perfectly aligned under the navbar across all breakpoints.
+   Tune via --app-max-width / --app-gutter above. */
+@utility app-container {
+  width: 100%;
+  margin-inline: auto;
+  max-width: var(--app-max-width);
+  padding-inline: var(--app-gutter);
+}
+
+/* Narrow variant — same gutters, tighter max-width. Use for account/detail
+   reading pages (e.g. profile) so two-column field grids don't spread too wide. */
+@utility app-container-narrow {
+  width: 100%;
+  margin-inline: auto;
+  max-width: var(--app-max-width-narrow);
+  padding-inline: var(--app-gutter);
 }

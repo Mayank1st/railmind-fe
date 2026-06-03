@@ -7,6 +7,7 @@ export type User = {
   email: string;
   mobile?: string;
   gender?: "female" | "male" | "other";
+  profile_photo?: string | null;
 };
 
 export type LoginPasswordPayload = {

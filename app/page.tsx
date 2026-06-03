@@ -38,7 +38,7 @@ export default function HomePage() {
       <div className="absolute inset-0 bg-[linear-gradient(180deg,#281506_0%,#1a1a18_75%)]" />
 
       {/* Content — gradient ke upar */}
-      <div className="relative z-10 mx-auto max-w-[1600px] px-12 pt-16 pb-16">
+      <div className="app-container relative z-10 pt-16 pb-16">
         {/* Badge */}
         <div className="flex">
           <span className="border-accent-warm/30 text-accent-warm flex items-center gap-2 rounded-full border bg-[#2a2318] px-4 py-1.5 text-sm">
