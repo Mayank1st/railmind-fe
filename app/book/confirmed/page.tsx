@@ -325,7 +325,7 @@ export default function BookingConfirmedPage() {
               <Button
                 onClick={handleDownloadTicket}
                 disabled={!bookingId || downloadTicket.isPending}
-                className="rounded-xl bg-[#E8AA4D] font-medium text-[#3d2817] hover:bg-[#D09840]"
+                className="cursor-pointer rounded-xl bg-[#E8AA4D] font-medium text-[#3d2817] hover:bg-[#D09840]"
               >
                 {downloadTicket.isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -340,7 +340,7 @@ export default function BookingConfirmedPage() {
                 variant="outline"
                 onClick={() => setReceiptOpen(true)}
                 disabled={!bookingId}
-                className="rounded-xl border-white/12 bg-transparent hover:bg-white/5"
+                className="cursor-pointer rounded-xl border-white/12 bg-transparent hover:bg-white/5"
               >
                 <ReceiptText className="h-4 w-4" />
                 View Receipt

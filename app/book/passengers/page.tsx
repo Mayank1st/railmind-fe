@@ -405,7 +405,7 @@ export default function BookingPassengersPage() {
             <Button
               variant="outline"
               onClick={() => setAdding(true)}
-              className="mt-4 rounded-full border-white/15 bg-transparent text-sm text-white/90 hover:bg-white/[0.04]"
+              className="mt-4 cursor-pointer rounded-full border-white/15 bg-transparent text-sm text-white/90 hover:bg-white/[0.04]"
             >
               <Plus className="h-4 w-4" />
               Add new passenger
@@ -564,7 +564,7 @@ function AddPassengerForm({
           <Button
             onClick={() => onSave(draft)}
             disabled={!valid || saving}
-            className="rounded-full bg-[#E8AA4D] font-medium text-[#3d2817] hover:bg-[#D09840]"
+            className="cursor-pointer rounded-full bg-[#E8AA4D] font-medium text-[#3d2817] hover:bg-[#D09840]"
           >
             {saving && <Loader2 className="h-4 w-4 animate-spin" />}
             Save passenger

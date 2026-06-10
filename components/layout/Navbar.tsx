@@ -226,13 +226,21 @@ export default function Navbar() {
             <>
               <Link
                 href="/login"
-                className="text-sm font-normal text-white/80 hover:text-white"
+                className={
+                  pathname === "/login"
+                    ? "rounded-lg bg-[#E8AA4D] px-5 py-2 text-sm font-medium text-[#1a1a18] hover:bg-[#D09840]"
+                    : "rounded-lg px-5 py-2 text-sm font-normal text-white/80 hover:text-white"
+                }
               >
                 Login
               </Link>
               <Link
                 href="/register"
-                className="rounded-lg bg-[#E8AA4D] px-5 py-2 text-sm font-medium text-[#1a1a18] hover:bg-[#D09840]"
+                className={
+                  pathname !== "/login"
+                    ? "rounded-lg bg-[#E8AA4D] px-5 py-2 text-sm font-medium text-[#1a1a18] hover:bg-[#D09840]"
+                    : "rounded-lg px-5 py-2 text-sm font-normal text-white/80 hover:text-white"
+                }
               >
                 Register
               </Link>

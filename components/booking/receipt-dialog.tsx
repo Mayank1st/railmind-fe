@@ -50,7 +50,7 @@ export function ReceiptDialog({
               size="sm"
               onClick={() => window.print()}
               disabled={!data}
-              className="rounded-lg border-white/12 bg-transparent hover:bg-white/5"
+              className="cursor-pointer rounded-lg border-white/12 bg-transparent hover:bg-white/5"
             >
               <Download className="h-4 w-4" />
               PDF

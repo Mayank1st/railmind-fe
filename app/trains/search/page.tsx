@@ -14,7 +14,6 @@ import {
   ChevronUp,
   Lock,
 } from "lucide-react";
-import Link from "next/link";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
@@ -25,6 +24,7 @@ import {
 } from "@/components/ui/select";
 import { useSeatAvailability } from "@/hooks/useSeatAvailability";
 import { useAuthStore } from "@/store/auth";
+import SearchForm from "@/components/train/SearchForm";
 
 // ── Train type badge colors ──
 const trainTypeBadge: Record<string, string> = {
@@ -108,6 +108,7 @@ function toggleFilter(
 
 export default function TrainSearchPage() {
   const searchParams = useSearchParams();
+  const [modifyOpen, setModifyOpen] = useState(false);
   const [sortBy, setSortBy] = useState("departure");
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [selectedDepartures, setSelectedDepartures] = useState<string[]>([]);
@@ -279,14 +280,31 @@ export default function TrainSearchPage() {
               <span className="text-foreground/50 text-sm">
                 {dateLabel} · {cls} · {quota === "GN" ? "General" : quota}
               </span>
-              <Link
-                href="/"
+              <button
+                onClick={() => setModifyOpen((v) => !v)}
                 className="text-foreground cursor-pointer rounded-lg border border-white/15 px-4 py-1.5 text-sm hover:bg-white/5"
               >
-                Modify
-              </Link>
+                {modifyOpen ? "Close" : "Modify"}
+              </button>
             </div>
           </div>
+
+          {/* Inline modify — edits the current search in place */}
+          {modifyOpen && (
+            <SearchForm
+              className="mt-3 rounded-xl border border-white/10 bg-[#121713] p-5"
+              defaults={{
+                fromCode: from ?? "",
+                fromDisplay: from ? `${from} · ${fromName}` : "",
+                toCode: to ?? "",
+                toDisplay: to ? `${to} · ${toName}` : "",
+                date: date ? parseISO(date) : undefined,
+                trainClass: cls,
+                quota,
+              }}
+              onSubmitted={() => setModifyOpen(false)}
+            />
+          )}
         </div>
       </div>
 

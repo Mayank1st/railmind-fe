@@ -419,7 +419,7 @@ export default function BookingReviewPage() {
               <Button
                 onClick={proceedToPay}
                 disabled={!agreed || count === 0 || createBooking.isPending}
-                className="mt-5 w-full rounded-xl bg-[#E8AA4D] py-5 font-medium text-[#3d2817] hover:bg-[#D09840]"
+                className="mt-5 w-full cursor-pointer rounded-xl bg-[#E8AA4D] py-5 font-medium text-[#3d2817] hover:bg-[#D09840]"
               >
                 {createBooking.isPending ? (
                   <>

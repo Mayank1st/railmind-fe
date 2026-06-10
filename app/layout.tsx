@@ -3,6 +3,7 @@ import { Newsreader, IBM_Plex_Sans } from "next/font/google";
 import { cookies } from "next/headers";
 import "./globals.css";
 import Navbar from "@/components/layout/Navbar";
+import Footer from "@/components/layout/Footer";
 import { AuthProvider } from "@/components/providers/AuthProvider";
 import { QueryProvider } from "@/components/providers/QueryProvider";
 
@@ -43,6 +44,7 @@ export default async function RootLayout({
           <AuthProvider initialAuthed={initialAuthed}>
             <Navbar />
             {children}
+            <Footer />
           </AuthProvider>
         </QueryProvider>
       </body>

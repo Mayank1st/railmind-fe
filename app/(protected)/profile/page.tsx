@@ -164,7 +164,7 @@ export default function ProfilePage() {
             variant="outline"
             onClick={() => fileRef.current?.click()}
             disabled={upload.isPending}
-            className="rounded-full border-white/15 bg-transparent px-5 text-sm font-medium text-white/90 hover:bg-white/[0.04]"
+            className="cusror-pointer rounded-full border-white/15 bg-transparent px-5 text-sm font-medium text-white/90 hover:bg-white/[0.04]"
           >
             {upload.isPending ? (
               <Loader2 className="h-4 w-4 animate-spin" />

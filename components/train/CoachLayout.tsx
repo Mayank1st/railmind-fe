@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { format, parseISO } from "date-fns";
 import { Train as TrainIcon, Sparkles, Info } from "lucide-react";
 import type { TrainCoach } from "@/lib/train";
@@ -28,7 +29,7 @@ function bayPattern(trainClass: string): string[] {
   return BAY_PATTERNS[trainClass] ?? BAY_PATTERNS.SL;
 }
 
-type BerthState = "avl" | "booked" | "rac";
+type BerthState = "avl" | "booked" | "rac" | "ladies";
 
 function hashString(s: string): number {
   let h = 0;
@@ -40,9 +41,15 @@ function hashString(s: string): number {
 
 function berthState(coachNumber: string, berth: number): BerthState {
   const r = hashString(`${coachNumber}#${berth}`) % 100;
+  if (r < 6) return "ladies";
   if (r < 60) return "avl";
   if (r < 92) return "booked";
   return "rac";
+}
+
+function berthType(trainClass: string, berth: number): string {
+  const pattern = bayPattern(trainClass);
+  return pattern[(berth - 1) % pattern.length];
 }
 
 type CoachStats = { avl: number; rac: number; booked: number };
@@ -55,7 +62,8 @@ function coachStats(coach: TrainCoach): CoachStats {
     const s = berthState(coach.coach_number, b);
     if (s === "avl") avl++;
     else if (s === "rac") rac++;
-    else booked++;
+    else if (s === "booked") booked++;
+    // ladies-quota berths are shown separately, not in these counts
   }
   return { avl, rac, booked };
 }
@@ -82,6 +90,7 @@ export function CoachLayout({
   toCode: string;
   date: string | null;
 }) {
+  const router = useRouter();
   const availableClasses = useMemo(() => {
     const seen = new Set<string>();
     const out: string[] = [];
@@ -141,6 +150,25 @@ export function CoachLayout({
   };
 
   const stats = selectedCoach ? coachStats(selectedCoach) : null;
+
+  // "S5/25 (LB), S5/27 (MB)" — sorted, with berth type from the bay pattern
+  const selectedSummary = selectedCoach
+    ? [...selectedBerths]
+        .sort((a, b) => a - b)
+        .map(
+          (b) =>
+            `${selectedCoach.coach_number}/${b} (${berthType(
+              selectedCoach.train_class,
+              b
+            )})`
+        )
+        .join(", ")
+    : "";
+
+  const handleConfirm = () => {
+    if (selectedBerths.size === 0) return;
+    router.push("/book/passengers");
+  };
 
   const aiSuggestion = (() => {
     if (filteredCoaches.length === 0) return null;
@@ -338,18 +366,48 @@ export function CoachLayout({
             />
           </div>
 
-          {/* Legend */}
-          <div className="text-foreground/40 mt-5 flex flex-wrap items-center gap-4 text-[11px]">
-            <LegendDot className="border border-white/15 bg-transparent" />
-            Available
-            <LegendDot className="border border-white/5 bg-white/[0.02] text-white/30" />
-            Booked
-            <LegendDot className="border border-orange-400/40 bg-orange-400/10 text-orange-300" />
-            RAC
-            <LegendDot className="border border-pink-300/40 bg-pink-300/20 text-pink-200" />
-            Selected
-            <LegendDot className="border-accent-warm/40 bg-accent-warm/20 text-accent-warm border" />
-            AI suggested
+          {/* Legend + confirm bar */}
+          <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-white/10 pt-5">
+            <div className="text-foreground/40 flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px]">
+              <span className="inline-flex items-center gap-1.5">
+                <LegendDot className="border border-white/15 bg-transparent" />
+                Available
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <LegendDot className="border-accent-warm bg-accent-warm/30 border" />
+                Your pick
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <LegendDot className="border border-white/5 bg-white/[0.02]" />
+                Booked
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <LegendDot className="border border-pink-300/50 bg-pink-300/25" />
+                Ladies quota
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <LegendDot className="border border-orange-400/40 bg-orange-400/10" />
+                RAC
+              </span>
+            </div>
+
+            <div className="flex items-center gap-4">
+              {selectedBerths.size > 0 && (
+                <span className="text-foreground/50 text-xs">
+                  Selected:{" "}
+                  <span className="text-foreground font-medium">
+                    {selectedSummary}
+                  </span>
+                </span>
+              )}
+              <button
+                onClick={handleConfirm}
+                disabled={selectedBerths.size === 0}
+                className="bg-accent-warm cursor-pointer rounded-lg px-5 py-2.5 text-sm font-medium text-[#1a1a18] transition-colors hover:bg-[#D09840] disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Confirm berths
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -539,11 +597,16 @@ function Berth({
 
   let style = baseStyle;
   if (selected) {
+    // Your pick — amber/gold
     style +=
-      " border-pink-300/50 bg-pink-300/25 text-pink-100 hover:bg-pink-300/35";
+      " border-accent-warm bg-accent-warm/25 text-accent-warm hover:bg-accent-warm/35";
+  } else if (state === "ladies") {
+    style +=
+      " cursor-not-allowed border-pink-300/50 bg-pink-300/20 text-pink-200";
   } else if (suggested) {
+    // AI-suggested hint — subtle amber ring (fills solid once picked)
     style +=
-      " border-accent-warm/50 bg-accent-warm/15 text-accent-warm hover:bg-accent-warm/25";
+      " border-accent-warm/50 bg-accent-warm/[0.06] text-accent-warm hover:bg-accent-warm/15";
   } else if (state === "booked") {
     style +=
       " cursor-not-allowed border-white/[0.06] bg-white/[0.01] text-white/20";
@@ -558,7 +621,7 @@ function Berth({
   return (
     <button
       onClick={onClick}
-      disabled={state === "booked"}
+      disabled={state === "booked" || state === "ladies"}
       className={style}
       aria-label={`Berth ${number} ${type} ${state}`}
     >

@@ -83,7 +83,7 @@ export default function PassengersPage() {
           <button
             type="button"
             onClick={openAdd}
-            className="text-muted-foreground hover:text-foreground bg-card/20 hover:bg-card/40 flex min-h-[132px] items-center justify-center gap-2 rounded-2xl border border-dashed border-white/12 text-sm transition-colors hover:border-white/20"
+            className="text-muted-foreground hover:text-foreground bg-card/20 hover:bg-card/40 flex min-h-[132px] cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-white/12 text-sm transition-colors hover:border-white/20"
           >
             <Plus className="h-4 w-4" />
             Add new passenger

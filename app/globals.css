@@ -136,6 +136,13 @@
     border-color: var(--color-border);
     outline-color: color-mix(in oklch, var(--color-ring) 50%, transparent);
   }
+  /* Tailwind v4's preflight sets buttons to `cursor: default`. Restore the
+     pointer cursor app-wide so every button/clickable (and Radix triggers
+     rendered with role="button") shows the hand — no inline cursor-pointer. */
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
