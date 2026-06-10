@@ -9,17 +9,24 @@ import {
   Clock,
   Loader2,
   Lock,
+  RotateCcw,
   Sparkles,
+  XCircle,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { computeFare, inr } from "@/lib/fare";
 import { toApiError } from "@/lib/api";
-import { isPaymentConfirmed, type ProcessPaymentPayload } from "@/lib/payments";
+import {
+  isPaymentFailed,
+  isPaymentSuccess,
+  type ProcessPaymentPayload,
+} from "@/lib/payments";
 import { useBookingStore } from "@/store/booking";
 import { usePassengers } from "@/hooks/usePassengers";
 import { useInitiatePayment } from "@/hooks/useInitiatePayment";
 import { useProcessPayment } from "@/hooks/useProcessPayment";
+import { useCancelBooking } from "@/hooks/useCancelBooking";
 import { BookingStepper } from "@/components/booking/booking-stepper";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -80,6 +87,12 @@ export default function BookingPaymentPage() {
 
   const initiate = useInitiatePayment();
   const processPayment = useProcessPayment();
+  const cancelBooking = useCancelBooking();
+
+  // Set when payment fails: the booking is cancelled server-side and the held
+  // seat released, so this becomes a terminal "rebook" state (retrying the same
+  // booking would 422). Holds the failure reason to show the user.
+  const [cancelledReason, setCancelledReason] = useState<string | null>(null);
 
   const [method, setMethod] = useState("upi");
   const [upiApp, setUpiApp] = useState("Google Pay");
@@ -100,17 +113,21 @@ export default function BookingPaymentPage() {
     return () => clearInterval(t);
   }, [seconds]);
 
-  const journey = store.journey ?? {
-    train: sp.get("train") ?? "—",
-    name: sp.get("name") ?? "Train",
-    from: sp.get("from") ?? "",
-    to: sp.get("to") ?? "",
-    dep: sp.get("dep")?.slice(0, 5) ?? "",
-    arr: sp.get("arr")?.slice(0, 5) ?? "",
-    date: sp.get("date"),
-    cls: sp.get("class") ?? "SL",
-    quota: sp.get("quota") ?? "GN",
-  };
+  const journey = useMemo(
+    () =>
+      store.journey ?? {
+        train: sp.get("train") ?? "—",
+        name: sp.get("name") ?? "Train",
+        from: sp.get("from") ?? "",
+        to: sp.get("to") ?? "",
+        dep: sp.get("dep")?.slice(0, 5) ?? "",
+        arr: sp.get("arr")?.slice(0, 5) ?? "",
+        date: sp.get("date"),
+        cls: sp.get("class") ?? "SL",
+        quota: sp.get("quota") ?? "GN",
+      },
+    [store.journey, sp]
+  );
 
   const count = useMemo(() => {
     if (store.passengers.length) return store.passengers.length;
@@ -121,7 +138,42 @@ export default function BookingPaymentPage() {
   const quotaLabel = QUOTA_LABEL[journey.quota] ?? journey.quota;
   const dateShort = journey.date ? fmt(journey.date, "EEE, dd MMM") : "—";
   const fare = computeFare(journey.cls, count);
+  const payNow = store.totalFare ?? fare.total;
+  const availability = store.availability;
   const timer = `${pad(Math.floor(seconds / 60))}:${pad(seconds % 60)}`;
+
+  // Back to passenger selection for the same journey (used after a cancel/fail).
+  const rebookHref = useMemo(() => {
+    const qs = new URLSearchParams({
+      train: journey.train,
+      name: journey.name,
+      from: journey.from,
+      to: journey.to,
+      dep: journey.dep,
+      arr: journey.arr,
+      class: journey.cls,
+      quota: journey.quota,
+      ...(journey.date ? { date: journey.date } : {}),
+    });
+    return `/book/passengers?${qs.toString()}`;
+  }, [journey]);
+
+  // Abandoned-payment mitigation: there's no backend timeout yet, so let the
+  // user release the held seat themselves before leaving.
+  async function cancelAndGoBack() {
+    if (cancelBooking.isPending) return;
+    try {
+      if (bookingId) await cancelBooking.mutateAsync(bookingId);
+    } catch {
+    } finally {
+      store.setBookingResult({
+        bookingId: null,
+        totalFare: null,
+        availability: null,
+      });
+      router.push(rebookHref);
+    }
+  }
 
   // The selected method's required input must be valid before we can pay.
   const methodReady = useMemo(() => {
@@ -167,14 +219,17 @@ export default function BookingPaymentPage() {
         buildPayload(payment.payment_id)
       );
 
-      if (!isPaymentConfirmed(res)) {
-        setError(
+      // Payment failed → seat released, booking cancelled. This is terminal:
+      // re-paying the same booking would 422, so route the user to rebook.
+      if (isPaymentFailed(res) || !isPaymentSuccess(res)) {
+        setCancelledReason(
           res.failure_reason ||
-            "Payment could not be completed. Please try again."
+            "Payment could not be completed and the booking was cancelled."
         );
         return;
       }
 
+      // Success — note the booking may settle as confirmed / rac / waitlisted.
       store.setPayment({
         method: method === "card" ? "Card" : "UPI",
         detail:
@@ -184,21 +239,64 @@ export default function BookingPaymentPage() {
         txnId: res.payment_id,
         paidAt: res.paid_at,
       });
+      store.setBookingStatus(res.booking_status);
       store.markStepComplete(3); // payment done → Confirmed unlocks
       const qs = new URLSearchParams(sp.toString());
       qs.set("pnr", res.booking_pnr);
+      if (res.booking_status) qs.set("status", res.booking_status);
       router.push(`/book/confirmed?${qs.toString()}`);
     } catch (e) {
       setError(toApiError(e).message);
     }
   }
 
+  // Terminal state: payment failed → booking cancelled, seat released. Don't
+  // let the user retry the dead booking; send them to rebook instead.
+  if (cancelledReason) {
+    return (
+      <div className="app-container-narrow py-8">
+        <Card className="mx-auto mt-6 max-w-lg border-red-500/20 bg-red-500/[0.04] shadow-none">
+          <CardContent className="flex flex-col items-center gap-4 p-8 text-center">
+            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-red-500/15">
+              <XCircle className="h-7 w-7 text-red-400" />
+            </span>
+            <div>
+              <h1 className="font-heading text-foreground text-2xl">
+                Payment failed
+              </h1>
+              <p className="text-muted-foreground mt-2 text-sm">
+                {cancelledReason} The held seat has been released, so
+                you&apos;ll need to book again.
+              </p>
+            </div>
+            <div className="mt-2 flex flex-wrap justify-center gap-3">
+              <Button
+                onClick={() => router.push(rebookHref)}
+                className="rounded-xl bg-[#E8AA4D] font-medium text-[#3d2817] hover:bg-[#D09840]"
+              >
+                <RotateCcw className="h-4 w-4" />
+                Rebook
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => router.push("/bookings")}
+                className="rounded-xl border-white/12 bg-transparent hover:bg-white/5"
+              >
+                Go to My Bookings
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="app-container-narrow py-8">
       {/* Journey summary bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#d6a572]/20 bg-[#1f1810] px-5 py-3.5 text-sm">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#E8AA4D]/20 bg-[#1f1810] px-5 py-3.5 text-sm">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          <span className="font-medium text-[#d6a572]">{journey.train}</span>
+          <span className="font-medium text-[#E8AA4D]">{journey.train}</span>
           <span className="text-foreground font-medium">{journey.name}</span>
           <span className="text-muted-foreground">
             {journey.from} {journey.dep}{" "}
@@ -227,7 +325,7 @@ export default function BookingPaymentPage() {
             <span
               className={cn(
                 "flex shrink-0 items-center gap-1.5 text-sm",
-                seconds > 0 ? "text-[#d6a572]" : "text-red-400"
+                seconds > 0 ? "text-[#E8AA4D]" : "text-red-400"
               )}
             >
               <Clock className="h-4 w-4" />
@@ -252,7 +350,7 @@ export default function BookingPaymentPage() {
                     disabled
                       ? "bg-card/20 cursor-not-allowed border-white/8 opacity-50"
                       : sel
-                        ? "cursor-pointer border-[#d6a572]/60 bg-[#d6a572]/[0.06]"
+                        ? "cursor-pointer border-[#E8AA4D]/60 bg-[#E8AA4D]/[0.06]"
                         : "bg-card/40 cursor-pointer border-white/8 hover:border-white/15"
                   )}
                 >
@@ -365,8 +463,8 @@ export default function BookingPaymentPage() {
           </Card>
 
           {/* Escrow banner */}
-          <div className="flex items-start gap-3 rounded-2xl border border-[#d6a572]/25 bg-gradient-to-r from-[#3a2a12] to-[#241a0c] px-5 py-4 text-sm">
-            <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[#d6a572]" />
+          <div className="flex items-start gap-3 rounded-2xl border border-[#E8AA4D]/25 bg-gradient-to-r from-[#3a2a12] to-[#241a0c] px-5 py-4 text-sm">
+            <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[#E8AA4D]" />
             <p className="text-white/80">
               Your payment is held in escrow. If our atomic booking call fails,
               you&apos;ll be auto-refunded — no manual claim needed.
@@ -386,9 +484,26 @@ export default function BookingPaymentPage() {
                 {journey.cls}
               </p>
 
+              {availability && availability.toUpperCase() !== "AVAILABLE" && (
+                <div className="mt-3 flex items-start gap-2 rounded-lg border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+                  <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  <span>
+                    Only {availability.toUpperCase()} available — paying holds a{" "}
+                    {availability.toUpperCase()} seat that confirms only if it
+                    clears.
+                  </span>
+                </div>
+              )}
+
               <dl className="mt-5 space-y-3 text-sm">
-                <Row label="Subtotal" value={inr(fare.subtotal)} />
-                <Row label="Charges" value={inr(fare.charges)} />
+                {store.totalFare != null ? (
+                  <Row label="Total fare" value={inr(payNow)} />
+                ) : (
+                  <>
+                    <Row label="Subtotal" value={inr(fare.subtotal)} />
+                    <Row label="Charges" value={inr(fare.charges)} />
+                  </>
+                )}
               </dl>
 
               <div className="my-5 h-px bg-white/10" />
@@ -396,7 +511,7 @@ export default function BookingPaymentPage() {
               <div className="flex items-center justify-between">
                 <span className="text-foreground font-medium">Pay now</span>
                 <span className="font-heading text-foreground text-2xl">
-                  {inr(fare.total)}
+                  {inr(payNow)}
                 </span>
               </div>
 
@@ -410,7 +525,7 @@ export default function BookingPaymentPage() {
               <Button
                 onClick={confirmAndPay}
                 disabled={!canPay}
-                className="mt-5 w-full rounded-xl bg-[#d6a572] py-5 font-medium text-[#3d2817] hover:bg-[#c89a64]"
+                className="mt-5 w-full rounded-xl bg-[#E8AA4D] py-5 font-medium text-[#3d2817] hover:bg-[#D09840]"
               >
                 {busy ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -418,6 +533,23 @@ export default function BookingPaymentPage() {
                   <Lock className="h-4 w-4" />
                 )}
                 {busy ? "Processing…" : "Confirm & Pay"}
+              </Button>
+
+              {/* No backend hold-timeout yet, so let the user free the seat. */}
+              <Button
+                variant="ghost"
+                onClick={cancelAndGoBack}
+                disabled={busy || cancelBooking.isPending}
+                className="text-muted-foreground hover:text-foreground mt-2 w-full rounded-xl hover:bg-white/5"
+              >
+                {cancelBooking.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Releasing seat…
+                  </>
+                ) : (
+                  "Cancel & go back"
+                )}
               </Button>
 
               {!bookingId && (
@@ -453,7 +585,7 @@ function Chip({
       className={cn(
         "cursor-pointer rounded-lg border px-4 py-2 text-sm transition-colors",
         active
-          ? "border-[#d6a572] text-[#d6a572]"
+          ? "border-[#E8AA4D] text-[#E8AA4D]"
           : "text-foreground/80 border-white/12 hover:border-white/25"
       )}
     >

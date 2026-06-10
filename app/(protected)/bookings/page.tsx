@@ -10,28 +10,19 @@ import {
   Radio,
   Search,
   Settings,
+  Sparkles,
+  TrainFront,
   Users,
 } from "lucide-react";
 import { differenceInCalendarDays, format, isValid, parseISO } from "date-fns";
 
 import { useAuthStore } from "@/store/auth";
 import { useJourneys } from "@/hooks/useJourneys";
-import type { BookingStatus, Journey } from "@/lib/bookings";
+import { usePassengers } from "@/hooks/usePassengers";
+import { bookingStatusMeta, type Journey } from "@/lib/bookings";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-
-const STATUS_LABEL: Record<BookingStatus, string> = {
-  confirmed: "CNF",
-  cancelled: "CAN",
-  waitlisted: "WL",
-};
-
-const STATUS_CLASS: Record<BookingStatus, string> = {
-  confirmed: "bg-emerald-500/15 text-emerald-300 border border-emerald-500/20",
-  cancelled: "bg-red-500/15 text-red-300 border border-red-500/20",
-  waitlisted: "bg-amber-500/15 text-amber-300 border border-amber-500/20",
-};
 
 function parseJourneyDate(iso: string): Date | null {
   const d = parseISO(iso);
@@ -55,12 +46,18 @@ export default function BookingsPage() {
 
   const upcoming = useJourneys("UPCOMING");
   const past = useJourneys("PAST");
+  const passengers = usePassengers();
+  const savedCount = passengers.data?.length ?? 0;
 
   const nextJourney = upcoming.data?.journeys[0] ?? null;
   const recent = past.data?.journeys.slice(0, 5) ?? [];
+  const allJourneys = [
+    ...(upcoming.data?.journeys ?? []),
+    ...(past.data?.journeys ?? []),
+  ];
 
   return (
-    <div className="app-container-narrow py-10">
+    <div className="app-container py-10">
       <Greeting firstName={firstName} />
 
       <section className="mt-8">
@@ -92,7 +89,7 @@ export default function BookingsPage() {
         <ActionTile
           icon={<Users className="h-4 w-4" />}
           title="Saved Passengers"
-          subtitle="Manage list"
+          subtitle={savedCount > 0 ? `${savedCount} saved` : "Manage list"}
           href="/passengers"
         />
         <ActionTile
@@ -103,37 +100,44 @@ export default function BookingsPage() {
         />
       </section>
 
-      <section className="mt-10">
-        <div className="mb-4 flex items-end justify-between">
-          <h2 className="font-heading text-foreground text-2xl">
-            Recent bookings
-          </h2>
-          {past.data && past.data.count > recent.length && (
-            <Link
-              href="/bookings/all"
-              className="text-sm text-[#d6a572] hover:underline"
-            >
-              View all →
-            </Link>
-          )}
-        </div>
+      <div className="mt-10 grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <section className="lg:col-span-2">
+          <div className="mb-4 flex items-end justify-between">
+            <h2 className="font-heading text-foreground text-2xl">
+              Recent bookings
+            </h2>
+            {past.data && past.data.count > recent.length && (
+              <Link
+                href="/bookings/all"
+                className="text-sm text-[#E8AA4D] hover:underline"
+              >
+                View all →
+              </Link>
+            )}
+          </div>
 
-        {past.isLoading ? (
-          <RecentSkeleton />
-        ) : recent.length === 0 ? (
-          <Card className="bg-card/40">
-            <CardContent className="text-muted-foreground py-8 text-center text-sm">
-              No past journeys yet.
-            </CardContent>
-          </Card>
-        ) : (
-          <ul className="space-y-2">
-            {recent.map((j) => (
-              <RecentRow key={j.booking_id} journey={j} />
-            ))}
-          </ul>
-        )}
-      </section>
+          {past.isLoading ? (
+            <RecentSkeleton />
+          ) : recent.length === 0 ? (
+            <Card className="bg-card/40">
+              <CardContent className="text-muted-foreground py-8 text-center text-sm">
+                No past journeys yet.
+              </CardContent>
+            </Card>
+          ) : (
+            <ul className="space-y-2">
+              {recent.map((j) => (
+                <RecentRow key={j.booking_id} journey={j} />
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <ForYou
+          journeys={allJourneys}
+          isLoading={upcoming.isLoading || past.isLoading}
+        />
+      </div>
     </div>
   );
 }
@@ -150,7 +154,7 @@ function Greeting({ firstName }: { firstName: string }) {
       </div>
       <Button
         asChild
-        className="rounded-full bg-[#d6a572] px-5 py-5 text-sm font-medium text-[#3d2817] hover:bg-[#c89a64]"
+        className="rounded-full bg-[#E8AA4D] px-5 py-5 text-sm font-medium text-[#3d2817] hover:bg-[#D09840]"
       >
         <Link href="/">
           <Search className="h-4 w-4" />
@@ -169,8 +173,11 @@ function HeroCard({
   onView: (bookingId: string) => void;
 }) {
   const allConfirmed = journey.booking_status === "confirmed";
+  const statusText = allConfirmed
+    ? "All confirmed"
+    : bookingStatusMeta(journey.booking_status).label;
   return (
-    <Card className="border-0 bg-[#d6a572] text-[#3d2817] shadow-none">
+    <Card className="border-0 bg-[#E8AA4D] text-[#3d2817] shadow-none">
       <CardContent className="p-8">
         <div className="flex items-start justify-between">
           <div>
@@ -188,37 +195,47 @@ function HeroCard({
             </p>
           </div>
 
-          <div className="flex items-center gap-2 rounded-full bg-[#3d2817]/10 px-4 py-2">
+          <div className="flex h-24 w-24 shrink-0 flex-col items-center justify-center gap-1.5 rounded-full bg-[#3d2817]/10 text-center">
             <span
               className={`h-2 w-2 rounded-full ${
                 allConfirmed ? "bg-emerald-700" : "bg-amber-700"
               }`}
             />
-            <span className="text-xs font-medium text-[#3d2817]">
-              {allConfirmed
-                ? "All confirmed"
-                : statusLabel(journey.booking_status)}
+            <span className="px-2 text-xs leading-tight font-medium text-[#3d2817]">
+              {statusText}
             </span>
           </div>
         </div>
 
         <div className="my-8 h-px bg-[#3d2817]/15" />
 
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-xs tracking-wider text-[#3d2817]/60 uppercase">
+        <div className="flex items-center gap-4 sm:gap-6">
+          <div className="shrink-0">
+            <p className="font-heading text-2xl text-[#3d2817]">
+              {journey.source_station}
+            </p>
+            <p className="mt-1 text-xs tracking-wider text-[#3d2817]/60 uppercase">
               Departure
             </p>
-            <p className="font-heading mt-1 text-2xl text-[#3d2817]">
-              {formatDate(journey.journey_date)}
-            </p>
           </div>
-          <div className="text-right">
-            <p className="text-xs tracking-wider text-[#3d2817]/60 uppercase">
-              From
+
+          <div className="flex flex-1 items-center">
+            <span className="h-2 w-2 shrink-0 rounded-full bg-[#3d2817]" />
+            <span className="h-px flex-1 bg-[#3d2817]/25" />
+            <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-[#3d2817]/10 px-3 py-1 text-xs font-medium text-[#3d2817]">
+              <TrainFront className="h-3.5 w-3.5" />
+              {formatDateShort(journey.journey_date)}
+            </span>
+            <span className="h-px flex-1 bg-[#3d2817]/25" />
+            <span className="h-2 w-2 shrink-0 rounded-full bg-[#3d2817]" />
+          </div>
+
+          <div className="shrink-0 text-right">
+            <p className="font-heading text-2xl text-[#3d2817]">
+              {journey.destination_station}
             </p>
-            <p className="font-heading mt-1 text-2xl text-[#3d2817]">
-              {journey.source_station}
+            <p className="mt-1 text-xs tracking-wider text-[#3d2817]/60 uppercase">
+              Arrival
             </p>
           </div>
         </div>
@@ -289,7 +306,7 @@ function ActionTile({
       href={href}
       className="group bg-card/40 hover:bg-card/60 rounded-xl border border-white/8 p-5 transition-colors hover:border-white/15"
     >
-      <div className="mb-4 flex h-9 w-9 items-center justify-center rounded-lg bg-[#3d2817] text-[#d6a572]">
+      <div className="mb-4 flex h-9 w-9 items-center justify-center rounded-lg bg-[#3d2817] text-[#E8AA4D]">
         {icon}
       </div>
       <p className="text-foreground text-base font-medium">{title}</p>
@@ -322,9 +339,9 @@ function RecentRow({ journey }: { journey: Journey }) {
         <div className="flex items-center gap-3">
           <Badge
             variant="outline"
-            className={`h-6 border-0 ${STATUS_CLASS[journey.booking_status]}`}
+            className={`h-6 ${bookingStatusMeta(journey.booking_status).className}`}
           >
-            {STATUS_LABEL[journey.booking_status]}
+            {bookingStatusMeta(journey.booking_status).short}
           </Badge>
           <ChevronRight className="text-muted-foreground h-4 w-4" />
         </div>
@@ -343,10 +360,84 @@ function RecentSkeleton() {
   );
 }
 
+// The most-travelled source→destination pair across the user's journeys.
+// Stands in for a recommendations API until one exists — swap the body for a
+// fetch and the rest of <ForYou /> stays the same.
+function usualRoute(journeys: Journey[]): { from: string; to: string } | null {
+  let best: { from: string; to: string; n: number } | null = null;
+  const counts = new Map<string, { from: string; to: string; n: number }>();
+  for (const j of journeys) {
+    const key = `${j.source_station}-${j.destination_station}`;
+    const entry = counts.get(key) ?? {
+      from: j.source_station,
+      to: j.destination_station,
+      n: 0,
+    };
+    entry.n += 1;
+    counts.set(key, entry);
+    if (!best || entry.n > best.n) best = entry;
+  }
+  return best ? { from: best.from, to: best.to } : null;
+}
+
+function ForYou({
+  journeys,
+  isLoading,
+}: {
+  journeys: Journey[];
+  isLoading: boolean;
+}) {
+  const route = usualRoute(journeys);
+  return (
+    <section>
+      <h2 className="font-heading text-foreground mb-4 text-2xl">For you</h2>
+      {isLoading ? (
+        <div className="bg-card/40 h-44 animate-pulse rounded-xl" />
+      ) : (
+        <Card className="bg-card/40 border-white/8 shadow-none">
+          <CardContent className="p-5">
+            <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-xs text-[#E8AA4D]">
+              <Sparkles className="h-3.5 w-3.5" />
+              Smart suggestion
+            </span>
+            {route ? (
+              <>
+                <p className="text-foreground mt-4 text-base leading-snug font-medium">
+                  Tatkal opens one day before travel
+                </p>
+                <p className="text-muted-foreground mt-1.5 text-sm leading-relaxed">
+                  For your usual {route.from} → {route.to} route — 10 AM for AC,
+                  11 AM for Sleeper.
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-foreground mt-4 text-base leading-snug font-medium">
+                  Tips tailored to your trips
+                </p>
+                <p className="text-muted-foreground mt-1.5 text-sm leading-relaxed">
+                  Book a journey and we&apos;ll surface Tatkal windows and fare
+                  alerts for your routes here.
+                </p>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      )}
+    </section>
+  );
+}
+
 function formatDate(iso: string): string {
   const d = parseJourneyDate(iso);
   if (!d) return iso;
   return format(d, "dd MMM yyyy");
+}
+
+function formatDateShort(iso: string): string {
+  const d = parseJourneyDate(iso);
+  if (!d) return iso;
+  return format(d, "EEE, dd MMM");
 }
 
 function formatTrainName(name: string): string {
@@ -354,8 +445,4 @@ function formatTrainName(name: string): string {
     .split(/\s+/)
     .map((w) => w[0]?.toUpperCase() + w.slice(1).toLowerCase())
     .join(" ");
-}
-
-function statusLabel(s: BookingStatus): string {
-  return s.charAt(0).toUpperCase() + s.slice(1);
 }

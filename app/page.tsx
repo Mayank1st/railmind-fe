@@ -35,7 +35,7 @@ export default function HomePage() {
   return (
     <main className="relative min-h-screen bg-[#1a1a18]">
       {/* Background gradient — cream wash fading to dark */}
-      <div className="absolute inset-0 bg-[linear-gradient(180deg,#281506_0%,#1a1a18_75%)]" />
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,#281506_0%,#1a1a18_45%)]" />
 
       {/* Content — gradient ke upar */}
       <div className="app-container relative z-10 pt-16 pb-16">
@@ -56,7 +56,7 @@ export default function HomePage() {
           </h1>
 
           {/* Subtext */}
-          <p className="text-foreground/50 mt-6 max-w-lg text-[17px]">
+          <p className="text-subtext mt-6 max-w-lg text-[17px]">
             Search 13,000+ trains across India. We&apos;ll predict your waitlist
             confirmation chance before you book.
           </p>
@@ -71,7 +71,7 @@ export default function HomePage() {
             <Link
               key={link.title}
               href={link.href}
-              className="flex items-center gap-4 rounded-2xl border border-white/10 bg-[#1e1e1c] px-5 py-4 hover:border-white/20"
+              className="flex items-center gap-4 rounded-2xl border border-white/10 bg-[#121713] px-5 py-4 hover:border-white/20"
             >
               <div className="bg-accent-warm/20 flex h-10 w-10 items-center justify-center rounded-lg">
                 <link.icon className="text-accent-warm h-5 w-5" />

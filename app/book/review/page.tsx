@@ -168,11 +168,14 @@ export default function BookingReviewPage() {
         })),
       });
 
-      store.setBookingId(booking.booking_id);
+      const backendFare = Number(booking.total_fare);
+      store.setBookingResult({
+        bookingId: booking.booking_id,
+        totalFare: Number.isFinite(backendFare) ? backendFare : null,
+        availability: booking.availability ?? null,
+      });
       store.markStepComplete(2); // step 2 done → Payment becomes reachable
 
-      // Carry booking_id (and pnr) in the URL too, so a refresh on the payment
-      // page still resolves the booking via the store/URL fallback.
       const qs = new URLSearchParams(sp.toString());
       qs.set("booking_id", booking.booking_id);
       if (booking.pnr_number) qs.set("pnr", booking.pnr_number);
@@ -185,9 +188,9 @@ export default function BookingReviewPage() {
   return (
     <div className="app-container-narrow py-8">
       {/* Journey summary bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#d6a572]/20 bg-[#1f1810] px-5 py-3.5 text-sm">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#E8AA4D]/20 bg-[#1f1810] px-5 py-3.5 text-sm">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          <span className="font-medium text-[#d6a572]">{journey.train}</span>
+          <span className="font-medium text-[#E8AA4D]">{journey.train}</span>
           <span className="text-foreground font-medium">{journey.name}</span>
           <span className="text-muted-foreground">
             {journey.from} {journey.dep}{" "}
@@ -215,7 +218,7 @@ export default function BookingReviewPage() {
 
           {/* Train card */}
           <Card className="bg-card/40 overflow-hidden border-white/8 py-0 shadow-none">
-            <div className="h-1 bg-[#d6a572]" />
+            <div className="h-1 bg-[#E8AA4D]" />
             <CardContent className="p-6">
               <div className="flex items-start justify-between">
                 <div>
@@ -270,7 +273,7 @@ export default function BookingReviewPage() {
                 <Button
                   variant="link"
                   onClick={editPassengers}
-                  className="h-auto p-0 text-sm font-medium text-[#d6a572] hover:text-[#e6bd8a]"
+                  className="h-auto p-0 text-sm font-medium text-[#E8AA4D] hover:text-[#F0BF6A]"
                 >
                   Edit
                 </Button>
@@ -328,7 +331,7 @@ export default function BookingReviewPage() {
                         No passengers selected.{" "}
                         <button
                           onClick={editPassengers}
-                          className="cursor-pointer text-[#d6a572] hover:underline"
+                          className="cursor-pointer text-[#E8AA4D] hover:underline"
                         >
                           Go back
                         </button>
@@ -416,7 +419,7 @@ export default function BookingReviewPage() {
               <Button
                 onClick={proceedToPay}
                 disabled={!agreed || count === 0 || createBooking.isPending}
-                className="mt-5 w-full rounded-xl bg-[#d6a572] py-5 font-medium text-[#3d2817] hover:bg-[#c89a64]"
+                className="mt-5 w-full rounded-xl bg-[#E8AA4D] py-5 font-medium text-[#3d2817] hover:bg-[#D09840]"
               >
                 {createBooking.isPending ? (
                   <>

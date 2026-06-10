@@ -138,7 +138,7 @@ function PassengerForm({
         <Button
           onClick={save}
           disabled={!isDraftValid(draft) || pending}
-          className="rounded-full bg-[#d6a572] font-medium text-[#3d2817] hover:bg-[#c89a64]"
+          className="rounded-full bg-[#E8AA4D] font-medium text-[#3d2817] hover:bg-[#D09840]"
         >
           {pending && <Loader2 className="h-4 w-4 animate-spin" />}
           {passenger ? "Save changes" : "Save passenger"}

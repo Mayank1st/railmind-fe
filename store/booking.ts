@@ -13,11 +13,8 @@ export type BookingJourney = {
   quota: string;
 };
 
-// A selected passenger plus the berth chosen for this booking.
 export type BookingPassenger = Passenger & { berth: string };
 
-// What the user paid with — captured on a successful payment so the Confirmed
-// screen can show the method / transaction / timestamp.
 export type BookingPayment = {
   method: string; // "UPI" | "Card"
   detail: string; // upi id, or masked card number
@@ -31,14 +28,22 @@ type BookingState = {
   contact: { email: string; phone: string };
   payment: BookingPayment | null;
   bookingId: string | null;
+  totalFare: number | null;
+  availability: string | null;
+  bookingStatus: string | null;
   completedStep: number;
   setBooking: (booking: {
     journey: BookingJourney;
     passengers: BookingPassenger[];
     contact: { email: string; phone: string };
   }) => void;
-  setBookingId: (id: string | null) => void;
+  setBookingResult: (result: {
+    bookingId: string | null;
+    totalFare: number | null;
+    availability: string | null;
+  }) => void;
   setPayment: (payment: BookingPayment | null) => void;
+  setBookingStatus: (status: string | null) => void;
   markStepComplete: (step: number) => void;
   clear: () => void;
 };
@@ -49,10 +54,15 @@ export const useBookingStore = create<BookingState>((set) => ({
   contact: { email: "", phone: "" },
   payment: null,
   bookingId: null,
+  totalFare: null,
+  availability: null,
+  bookingStatus: null,
   completedStep: 0,
   setBooking: (booking) => set(booking),
-  setBookingId: (bookingId) => set({ bookingId }),
+  setBookingResult: ({ bookingId, totalFare, availability }) =>
+    set({ bookingId, totalFare, availability }),
   setPayment: (payment) => set({ payment }),
+  setBookingStatus: (bookingStatus) => set({ bookingStatus }),
   markStepComplete: (step) =>
     set((s) => ({ completedStep: Math.max(s.completedStep, step) })),
   clear: () =>
@@ -62,6 +72,9 @@ export const useBookingStore = create<BookingState>((set) => ({
       contact: { email: "", phone: "" },
       payment: null,
       bookingId: null,
+      totalFare: null,
+      availability: null,
+      bookingStatus: null,
       completedStep: 0,
     }),
 }));

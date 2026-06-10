@@ -195,11 +195,11 @@ export default function ProfilePage() {
             <TabsTrigger
               key={t.id}
               value={t.id}
-              className="text-muted-foreground data-active:text-foreground flex-none gap-2 px-4 py-3 after:-bottom-px after:bg-[#d6a572] data-active:font-medium"
+              className="text-muted-foreground data-active:text-foreground flex-none gap-2 px-4 py-3 after:-bottom-px after:bg-[#E8AA4D] data-active:font-medium"
             >
               {t.label}
               {t.badge && (
-                <Badge className="h-5 bg-[#3d2817] px-2 text-[10px] font-semibold tracking-wide text-[#d6a572]">
+                <Badge className="h-5 bg-[#3d2817] px-2 text-[10px] font-semibold tracking-wide text-[#E8AA4D]">
                   {t.badge}
                 </Badge>
               )}
@@ -319,7 +319,7 @@ function PersonalTab() {
                 size="sm"
                 onClick={save}
                 disabled={update.isPending}
-                className="rounded-full bg-[#d6a572] font-medium text-[#3d2817] hover:bg-[#c89a64]"
+                className="rounded-full bg-[#E8AA4D] font-medium text-[#3d2817] hover:bg-[#D09840]"
               >
                 {update.isPending && (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -612,7 +612,7 @@ function SecurityTab() {
             title="Two-factor authentication"
             subtitle="Off · Add via SMS or authenticator app"
             trailing={
-              <Button className="rounded-full bg-[#d6a572] text-sm font-medium text-[#3d2817] hover:bg-[#c89a64]">
+              <Button className="rounded-full bg-[#E8AA4D] text-sm font-medium text-[#3d2817] hover:bg-[#D09840]">
                 Enable 2FA
               </Button>
             }
@@ -693,10 +693,10 @@ function KycTab() {
   return (
     <div className="space-y-6">
       {/* Phase 2 banner */}
-      <div className="flex items-start gap-3 rounded-2xl border border-[#d6a572]/25 bg-gradient-to-r from-[#3a2a12] to-[#241a0c] px-5 py-4 text-sm">
-        <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[#d6a572]" />
+      <div className="flex items-start gap-3 rounded-2xl border border-[#E8AA4D]/25 bg-gradient-to-r from-[#3a2a12] to-[#241a0c] px-5 py-4 text-sm">
+        <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[#E8AA4D]" />
         <p className="text-white/80">
-          <span className="font-semibold text-[#e6bd8a]">Phase 2 feature.</span>{" "}
+          <span className="font-semibold text-[#F0BF6A]">Phase 2 feature.</span>{" "}
           ID verification will unlock Tatkal auto-booking and higher per-ticket
           passenger limits. Documents are encrypted and never shown in full.
         </p>
@@ -1086,7 +1086,7 @@ function SectionAction({
       variant="link"
       onClick={onClick}
       disabled={disabled}
-      className="h-auto gap-1.5 p-0 text-sm font-medium text-[#d6a572] no-underline hover:text-[#e6bd8a] hover:no-underline"
+      className="h-auto gap-1.5 p-0 text-sm font-medium text-[#E8AA4D] no-underline hover:text-[#F0BF6A] hover:no-underline"
     >
       {icon}
       {children}

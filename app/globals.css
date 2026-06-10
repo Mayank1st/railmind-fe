@@ -40,6 +40,7 @@
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
   --color-accent-warm: var(--accent-warm);
+  --color-subtext: var(--subtext);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -63,7 +64,8 @@
   --muted: oklch(0.25 0 0);
   --muted-foreground: oklch(0.6 0 0); /* gray text */
   --accent: oklch(0.65 0.15 60); /* same as primary */
-  --accent-warm: #a45e00;
+  --accent-warm: #e8aa4d;
+  --subtext: #97938c;
   --accent-foreground: oklch(0.1 0 0);
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(1 0 0 / 10%);

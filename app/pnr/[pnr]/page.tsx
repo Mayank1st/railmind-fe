@@ -153,7 +153,7 @@ export default function PnrStatusPage() {
         </div>
 
         {/* ── Train Card ── */}
-        <div className="rounded-xl border border-white/10 bg-[#1e1e1c] p-6">
+        <div className="rounded-xl border border-white/10 bg-[#121713] p-6">
           {/* Train info + Journey date */}
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">
@@ -211,7 +211,7 @@ export default function PnrStatusPage() {
         </div>
 
         {/* ── Passenger Table ── */}
-        <div className="mt-6 overflow-hidden rounded-xl border border-white/10 bg-[#1e1e1c]">
+        <div className="mt-6 overflow-hidden rounded-xl border border-white/10 bg-[#121713]">
           <Table>
             <TableHeader>
               <TableRow className="border-white/5 bg-white/[0.02] hover:bg-white/[0.02]">
@@ -278,7 +278,7 @@ export default function PnrStatusPage() {
 
         {/* ── Class & Quota + Chart Status ── */}
         <div className="mt-6 grid grid-cols-2 gap-4">
-          <div className="rounded-xl border border-white/10 bg-[#1e1e1c] p-5">
+          <div className="rounded-xl border border-white/10 bg-[#121713] p-5">
             <p className="text-foreground/40 text-xs font-medium tracking-wider uppercase">
               Class & Quota
             </p>
@@ -286,7 +286,7 @@ export default function PnrStatusPage() {
               {data.train_class} · {quotaLabel[data.quota] ?? data.quota}
             </p>
           </div>
-          <div className="rounded-xl border border-white/10 bg-[#1e1e1c] p-5">
+          <div className="rounded-xl border border-white/10 bg-[#121713] p-5">
             <p className="text-foreground/40 text-xs font-medium tracking-wider uppercase">
               Chart Status
             </p>

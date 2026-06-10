@@ -32,7 +32,16 @@ export type ProfileDetails = {
   kyc_status: string;
 };
 
-/** Editable personal fields. Partial — send only what changed (PATCH). */
+/**
+ * Editable personal fields. Partial — send only what changed (PATCH).
+ * Mirrors the backend UpdateUserProfileDTO.
+ *
+ * NOTE on mobile_number: accepted by update-profile (Phase A), but the backend
+ * treats it as a verifiable credential — changing it resets is_mobile_verified
+ * to false and a duplicate number is rejected with RM-AUTH-010 (409). OTP
+ * re-verification lands in Phase B (SMS infra), so a saved number is "unverified"
+ * until then.
+ */
 export type UpdateProfilePayload = Partial<
   Pick<
     ProfileDetails,
@@ -43,6 +52,7 @@ export type UpdateProfilePayload = Partial<
     | "marital_status"
     | "nationality"
     | "occupation"
+    | "mobile_number"
   >
 >;
 

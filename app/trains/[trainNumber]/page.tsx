@@ -268,7 +268,7 @@ export default function TrainDetailPage() {
         </button>
 
         {/* ── Train hero card ── */}
-        <section className="overflow-hidden rounded-xl border border-white/10 bg-[#1e1e1c]">
+        <section className="overflow-hidden rounded-xl border border-white/10 bg-[#121713]">
           <div className="bg-accent-warm/40 h-1" />
           <div className="p-6">
             <div className="flex items-start justify-between gap-6">
@@ -427,7 +427,7 @@ export default function TrainDetailPage() {
 
           {/* Right — Booking sidebar */}
           <aside className="w-[320px] shrink-0">
-            <div className="sticky top-6 rounded-xl border border-white/10 bg-[#1e1e1c] p-5">
+            <div className="sticky top-6 rounded-xl border border-white/10 bg-[#121713] p-5">
               <h3 className="text-foreground text-base font-medium">
                 Book this train
               </h3>
@@ -542,14 +542,14 @@ function ScheduleTable({
 }) {
   if (stops.length === 0) {
     return (
-      <div className="rounded-xl border border-white/10 bg-[#1e1e1c] p-12 text-center">
+      <div className="rounded-xl border border-white/10 bg-[#121713] p-12 text-center">
         <p className="text-foreground/50">No schedule available</p>
       </div>
     );
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-white/10 bg-[#1e1e1c]">
+    <div className="overflow-hidden rounded-xl border border-white/10 bg-[#121713]">
       <Table>
         <TableHeader>
           <TableRow className="border-white/5 bg-white/[0.02] hover:bg-white/[0.02]">
@@ -652,7 +652,7 @@ function SeatAvailabilityPanel({
 }) {
   if (!isAuthed) {
     return (
-      <div className="flex flex-col items-center gap-3 rounded-xl border border-white/10 bg-[#1e1e1c] p-12 text-center">
+      <div className="flex flex-col items-center gap-3 rounded-xl border border-white/10 bg-[#121713] p-12 text-center">
         <Lock className="text-foreground/40 h-8 w-8" />
         <p className="text-foreground/60 text-sm">
           Login to see live seat availability
@@ -663,7 +663,7 @@ function SeatAvailabilityPanel({
 
   if (!canFetch) {
     return (
-      <div className="rounded-xl border border-white/10 bg-[#1e1e1c] p-12 text-center">
+      <div className="rounded-xl border border-white/10 bg-[#121713] p-12 text-center">
         <p className="text-foreground/50 text-sm">
           Pick journey date, from and to stations to check availability
         </p>
@@ -672,7 +672,7 @@ function SeatAvailabilityPanel({
   }
 
   return (
-    <div className="rounded-xl border border-white/10 bg-[#1e1e1c] p-6">
+    <div className="rounded-xl border border-white/10 bg-[#121713] p-6">
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         {classes.map((c) => {
           const avail = seatClassMap[c.class_code];
@@ -717,7 +717,7 @@ function SeatAvailabilityPanel({
 // ── Fare Breakdown Tab Content ──
 function FareBreakdownPanel() {
   return (
-    <div className="flex flex-col items-center gap-3 rounded-xl border border-white/10 bg-[#1e1e1c] p-12 text-center">
+    <div className="flex flex-col items-center gap-3 rounded-xl border border-white/10 bg-[#121713] p-12 text-center">
       <Sparkles className="text-accent-warm/60 h-8 w-8" />
       <p className="text-foreground/60 text-sm">
         Fare breakdown will appear once the booking flow is connected.

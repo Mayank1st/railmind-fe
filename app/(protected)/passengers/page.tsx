@@ -53,7 +53,7 @@ export default function PassengersPage() {
 
         <Button
           onClick={openAdd}
-          className="rounded-full bg-[#d6a572] px-5 font-medium text-[#3d2817] hover:bg-[#c89a64]"
+          className="rounded-full bg-[#E8AA4D] px-5 font-medium text-[#3d2817] hover:bg-[#D09840]"
         >
           <Plus className="h-4 w-4" />
           Add passenger
@@ -113,10 +113,10 @@ function PassengerCard({
     <div
       className={cn(
         "flex gap-4 rounded-2xl border border-white/8 p-5",
-        p.is_primary ? "bg-[#d6a572]/[0.06]" : "bg-card/40"
+        p.is_primary ? "bg-[#E8AA4D]/[0.06]" : "bg-card/40"
       )}
     >
-      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#3d2817] text-sm font-medium text-[#d6a572]">
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#3d2817] text-sm font-medium text-[#E8AA4D]">
         {getInitials(p.full_name)}
       </div>
 
@@ -126,7 +126,7 @@ function PassengerCard({
             {p.full_name}
           </span>
           {tag && (
-            <Badge className="h-5 bg-[#3d2817] px-2 text-[10px] font-semibold tracking-wide text-[#d6a572]">
+            <Badge className="h-5 bg-[#3d2817] px-2 text-[10px] font-semibold tracking-wide text-[#E8AA4D]">
               {tag}
             </Badge>
           )}

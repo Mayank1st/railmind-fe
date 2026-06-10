@@ -30,6 +30,12 @@ export type ProcessPaymentPayload =
       card_number: string;
       card_cvv: string;
       card_holder_name: string;
+    }
+  | {
+      payment_id: string;
+      payment_method: "NETBANKING";
+      netbanking_user: string;
+      netbanking_password: string;
     };
 
 export const paymentsApi = {
@@ -47,14 +53,32 @@ export const paymentsApi = {
 };
 
 /**
- * Whether the booking actually went through. The backend currently returns a
- * top-level `success: false` even on a paid+confirmed booking, so we decide
- * from the data fields rather than trusting the envelope.
+ * Whether the payment succeeded. Success doesn't always mean "confirmed" — the
+ * booking may settle as rac/waitlisted — so we key off `payment_status` (and
+ * the booking having left the payable state), not a hardcoded "confirmed".
+ * We read these data fields rather than the envelope's top-level `success`,
+ * which the backend has been observed to return as false even on a paid booking.
  */
-export function isPaymentConfirmed(res: ProcessPayment | null | undefined) {
+export function isPaymentSuccess(res: ProcessPayment | null | undefined) {
+  if (!res) return false;
+  const payment = res.payment_status?.toLowerCase();
+  const booking = res.booking_status?.toLowerCase();
+  if (payment === "success") return true;
+  return (
+    payment !== "failed" &&
+    (booking === "confirmed" || booking === "rac" || booking === "waitlisted")
+  );
+}
+
+/**
+ * A failed payment releases the held seat and moves the booking to `cancelled`.
+ * Once cancelled, re-initiating payment on the same booking 422s (RM-PAY-005),
+ * so the UI must treat this as terminal and send the user to rebook.
+ */
+export function isPaymentFailed(res: ProcessPayment | null | undefined) {
   if (!res) return false;
   return (
-    res.payment_status?.toLowerCase() === "success" ||
-    res.booking_status?.toLowerCase() === "confirmed"
+    res.payment_status?.toLowerCase() === "failed" ||
+    res.booking_status?.toLowerCase() === "cancelled"
   );
 }

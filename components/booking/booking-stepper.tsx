@@ -52,7 +52,7 @@ export function BookingStepper({ current }: { current: number }) {
                   isCompleted
                     ? "bg-emerald-500 text-white"
                     : isCurrent
-                      ? "bg-[#d6a572] text-[#3d2817]"
+                      ? "bg-[#E8AA4D] text-[#3d2817]"
                       : "text-muted-foreground border border-white/15"
                 )}
               >
@@ -75,7 +75,7 @@ export function BookingStepper({ current }: { current: number }) {
               <div
                 className={cn(
                   "h-px min-w-6 flex-1",
-                  step <= reached ? "bg-[#d6a572]" : "bg-white/10"
+                  step <= reached ? "bg-[#E8AA4D]" : "bg-white/10"
                 )}
               />
             )}

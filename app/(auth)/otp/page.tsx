@@ -201,7 +201,7 @@ export default function OtpPage() {
 
         {/* ── RIGHT SIDE — OTP Form ── */}
         <div className="flex w-1/2 items-center justify-end px-8">
-          <div className="w-full max-w-md rounded-2xl border border-white/15 bg-[#1e1e1c] p-8 text-center shadow-[0_0_0_1px_rgba(255,255,255,0.04),0_24px_60px_-12px_rgba(0,0,0,0.5)]">
+          <div className="w-full max-w-md rounded-2xl border border-white/15 bg-[#121713] p-8 text-center shadow-[0_0_0_1px_rgba(255,255,255,0.04),0_24px_60px_-12px_rgba(0,0,0,0.5)]">
             {/* Mail icon */}
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#2a2a28]">
               <Mail className="text-accent-warm h-6 w-6" />
@@ -263,7 +263,7 @@ export default function OtpPage() {
             <Button
               onClick={handleVerify}
               disabled={submitted || isSubmitting}
-              className="mt-6 w-full cursor-pointer rounded-lg bg-[#d4a373] py-6 text-sm font-medium text-[#1a1a18] hover:bg-[#c89564] disabled:cursor-not-allowed disabled:bg-[#2a2a28] disabled:text-white/40 disabled:hover:bg-[#2a2a28]"
+              className="mt-6 w-full cursor-pointer rounded-lg bg-[#E8AA4D] py-6 text-sm font-medium text-[#1a1a18] hover:bg-[#D09840] disabled:cursor-not-allowed disabled:bg-[#2a2a28] disabled:text-white/40 disabled:hover:bg-[#2a2a28]"
             >
               <Check className="mr-2 h-4 w-4" />
               {isSubmitting ? "Verifying…" : "Verify & continue"}

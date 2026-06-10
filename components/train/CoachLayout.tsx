@@ -170,7 +170,7 @@ export function CoachLayout({
 
   if (coaches.length === 0) {
     return (
-      <div className="rounded-xl border border-white/10 bg-[#1e1e1c] p-12 text-center">
+      <div className="rounded-xl border border-white/10 bg-[#121713] p-12 text-center">
         <p className="text-foreground/50">No coach information available</p>
       </div>
     );
@@ -179,7 +179,7 @@ export function CoachLayout({
   return (
     <div className="space-y-4">
       {/* ── Header: Pick your berth ── */}
-      <div className="rounded-xl border border-white/10 bg-[#1e1e1c] p-5">
+      <div className="rounded-xl border border-white/10 bg-[#121713] p-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-3">
@@ -255,7 +255,7 @@ export function CoachLayout({
                       ? "border-accent-warm bg-accent-warm/5"
                       : status.tone === "full"
                         ? "border-white/10 bg-white/[0.02] opacity-50"
-                        : "border-white/15 bg-[#1e1e1c] hover:border-white/30"
+                        : "border-white/15 bg-[#121713] hover:border-white/30"
                   }`}
                 >
                   <span
@@ -292,7 +292,7 @@ export function CoachLayout({
 
       {/* ── Selected coach detail ── */}
       {selectedCoach && stats && (
-        <div className="rounded-xl border border-white/10 bg-[#1e1e1c] p-5">
+        <div className="rounded-xl border border-white/10 bg-[#121713] p-5">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="flex items-center gap-3">
               <span className="bg-accent-warm/30 text-accent-warm flex h-10 w-12 items-center justify-center rounded-md text-xs font-semibold">

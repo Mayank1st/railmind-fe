@@ -2,10 +2,15 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Search, ArrowRight, CalendarIcon } from "lucide-react";
+import {
+  Search,
+  ArrowRight,
+  CalendarIcon,
+  MapPin,
+  Sparkles,
+} from "lucide-react";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Popover,
   PopoverContent,
@@ -51,6 +56,8 @@ export default function SearchForm({
   const [date, setDate] = useState<Date | undefined>(defaults?.date);
   const [trainClass, setTrainClass] = useState(defaults?.trainClass ?? "SL");
   const [quota, setQuota] = useState(defaults?.quota ?? "GN");
+  const [flexibleDates, setFlexibleDates] = useState(false);
+  const [nearbyStations, setNearbyStations] = useState(false);
 
   const handleSearch = () => {
     if (!fromCode || !toCode) return;
@@ -73,7 +80,7 @@ export default function SearchForm({
   return (
     <div
       className={
-        className ?? "mt-12 rounded-2xl border border-white/10 bg-[#1e1e1c] p-6"
+        className ?? "mt-12 rounded-2xl border border-white/10 bg-[#121713] p-6"
       }
     >
       <div className="flex items-end gap-3">
@@ -140,6 +147,9 @@ export default function SearchForm({
                   setCalendarOpen(false); // ← select hone pe close
                 }}
                 disabled={(d) => d < new Date()}
+                classNames={{
+                  day_button: "cursor-pointer",
+                }}
               />
             </PopoverContent>
           </Popover>
@@ -194,7 +204,7 @@ export default function SearchForm({
         {/* SEARCH BUTTON */}
         <button
           onClick={handleSearch}
-          className="bg-accent-warm flex cursor-pointer items-center gap-2 rounded-xl px-6 py-3 font-medium text-white hover:opacity-90"
+          className="bg-accent-warm flex cursor-pointer items-center gap-2 rounded-xl px-6 py-3 font-medium text-[#1a1a18] hover:opacity-90"
         >
           <Search className="h-4 w-4" />
           Search
@@ -204,31 +214,92 @@ export default function SearchForm({
       {/* Divider */}
       <div className="mt-4 border-t border-white/10" />
 
-      {/* Row 2 — Checkboxes + Recent */}
-      <div className="mt-4 flex items-center justify-between">
-        <div className="flex items-center gap-6">
-          <label className="flex cursor-pointer items-center gap-2 text-sm text-white/50">
-            <Checkbox className="data-[state=checked]:!border-accent-warm data-[state=checked]:!bg-accent-warm cursor-pointer !border-white/30 !bg-white" />
-            Tatkal
-          </label>
-          <label className="flex cursor-pointer items-center gap-2 text-sm text-white/50">
-            <Checkbox className="data-[state=checked]:!border-accent-warm data-[state=checked]:!bg-accent-warm cursor-pointer !border-white/30 !bg-white" />
-            Ladies quota
-          </label>
-          <label className="flex cursor-pointer items-center gap-2 text-sm text-white/50">
-            <Checkbox className="data-[state=checked]:!border-accent-warm data-[state=checked]:!bg-accent-warm cursor-pointer !border-white/30 !bg-white" />
-            Lower berth
-          </label>
+      {/* Row 2 — Filter options + Recent */}
+      <div className="mt-4 flex items-center justify-between gap-4">
+        <div className="flex flex-1 items-stretch gap-3">
+          {/* Flexible dates */}
+          <button
+            type="button"
+            onClick={() => setFlexibleDates((v) => !v)}
+            className={`flex flex-1 cursor-pointer items-center gap-3 rounded-xl border px-4 py-2.5 text-left transition-colors ${
+              flexibleDates
+                ? "border-accent-warm/40 bg-accent-warm/10"
+                : "border-white/10 bg-[#252523] hover:border-white/20"
+            }`}
+          >
+            <CalendarIcon className="h-4 w-4 shrink-0 text-white/40" />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-white/80">
+                Flexible dates
+              </p>
+              <p className="text-xs text-white/30">Search ±1 day</p>
+            </div>
+            <div
+              className={`h-4 w-4 shrink-0 rounded-full border transition-colors ${
+                flexibleDates
+                  ? "border-accent-warm bg-accent-warm/30"
+                  : "border-white/30"
+              }`}
+            />
+          </button>
+
+          {/* Nearby stations */}
+          <button
+            type="button"
+            onClick={() => setNearbyStations((v) => !v)}
+            className={`flex flex-1 cursor-pointer items-center gap-3 rounded-xl border px-4 py-2.5 text-left transition-colors ${
+              nearbyStations
+                ? "border-accent-warm/40 bg-accent-warm/10"
+                : "border-white/10 bg-[#252523] hover:border-white/20"
+            }`}
+          >
+            <MapPin className="h-4 w-4 shrink-0 text-white/40" />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-white/80">
+                Nearby stations
+              </p>
+              <p className="text-xs text-white/30">
+                BCT, CST, LTT also covered
+              </p>
+            </div>
+            <div
+              className={`h-4 w-4 shrink-0 rounded-full border transition-colors ${
+                nearbyStations
+                  ? "border-accent-warm bg-accent-warm/30"
+                  : "border-white/30"
+              }`}
+            />
+          </button>
+
+          {/* Likely to confirm only — coming soon, disabled */}
+          <div className="flex flex-1 cursor-not-allowed items-center gap-3 rounded-xl border border-white/5 bg-[#252523]/50 px-4 py-2.5">
+            <Sparkles className="h-4 w-4 shrink-0 text-white/25" />
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-sm font-medium text-white/40">
+                  Likely to confirm only
+                </p>
+                <span className="rounded-full border border-[#E8AA4D]/20 bg-[#E8AA4D]/10 px-2 py-0.5 text-xs whitespace-nowrap text-[#E8AA4D]/70">
+                  Coming soon
+                </span>
+              </div>
+              <p className="text-xs text-white/20">
+                Hide trains with low confirmation chance
+              </p>
+            </div>
+            <div className="h-4 w-4 shrink-0 rounded-full border border-white/15" />
+          </div>
         </div>
 
-        <div className="text-sm text-white/40">
+        {/* Recent searches */}
+        <div className="shrink-0 text-sm text-white/40">
           Recent:{" "}
           <span
             onClick={() => {
               setFromCode("BCT");
-              setFromDisplay("BCT · MUMBAI CENTR");
+              setFromDisplay("BCT · Mumbai Centr");
               setToCode("NDLS");
-              setToDisplay("NDLS · NEW DELHI");
+              setToDisplay("NDLS · New Delhi");
             }}
             className="text-accent-warm cursor-pointer hover:underline"
           >
@@ -238,9 +309,9 @@ export default function SearchForm({
           <span
             onClick={() => {
               setFromCode("SBC");
-              setFromDisplay("SBC · KSR BENGALURU");
+              setFromDisplay("SBC · KSR Bengaluru");
               setToCode("MAS");
-              setToDisplay("MAS · CHENNAI CTRL");
+              setToDisplay("MAS · Chennai Ctrl");
             }}
             className="text-accent-warm cursor-pointer hover:underline"
           >

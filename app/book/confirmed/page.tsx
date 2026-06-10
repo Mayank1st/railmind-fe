@@ -11,15 +11,22 @@ import {
   Copy,
   Download,
   Home,
+  Loader2,
   QrCode,
   ReceiptText,
 } from "lucide-react";
 
+import { cn } from "@/lib/utils";
 import { computeFare, inr } from "@/lib/fare";
+import { toApiError } from "@/lib/api";
+import { bookingStatusMeta } from "@/lib/bookings";
 import { berthLabel, genderShort } from "@/lib/passengers";
 import { useBookingStore, type BookingPassenger } from "@/store/booking";
 import { usePassengers } from "@/hooks/usePassengers";
+import { usePnrStatus } from "@/hooks/usePnrStatus";
+import { useDownloadTicket } from "@/hooks/useDownloadTicket";
 import { useAuthStore } from "@/store/auth";
+import { ReceiptDialog } from "@/components/booking/receipt-dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -39,6 +46,9 @@ export default function BookingConfirmedPage() {
   const userEmail = useAuthStore((s) => s.user?.email);
 
   const [copied, setCopied] = useState(false);
+  const [receiptOpen, setReceiptOpen] = useState(false);
+  const [ticketError, setTicketError] = useState<string | null>(null);
+  const downloadTicket = useDownloadTicket();
 
   const journey = store.journey ?? {
     train: sp.get("train") ?? "—",
@@ -52,7 +62,7 @@ export default function BookingConfirmedPage() {
     quota: sp.get("quota") ?? "GN",
   };
 
-  const passengers: BookingPassenger[] = useMemo(() => {
+  const storePassengers: BookingPassenger[] = useMemo(() => {
     if (store.passengers.length) return store.passengers;
     const ids = (sp.get("pax") ?? "").split(",").filter(Boolean);
     return saved
@@ -60,12 +70,67 @@ export default function BookingConfirmedPage() {
       .map((p) => ({ ...p, berth: p.berth_preference ?? "NP" }));
   }, [store.passengers, saved, sp]);
 
-  const count = passengers.length;
-  const pnr = sp.get("pnr") ?? store.payment?.txnId ?? "—";
+  const pnr = sp.get("pnr") ?? "—";
   const bookingId = store.bookingId ?? sp.get("booking_id") ?? "";
   const payment = store.payment;
   const email = userEmail ?? store.contact.email ?? "your email";
+
+  // Real allotment — per-passenger seat, berth and settled status — lives on the
+  // PNR endpoint (same source as the booking-detail page). Show the store's
+  // passengers instantly, then swap in the real seats once the PNR resolves; on
+  // a hard refresh (store cleared) the PNR in the URL still rebuilds the ticket.
+  const pnrQuery = usePnrStatus(pnr === "—" ? null : pnr);
+  const ticket = pnrQuery.data;
+
+  const count = ticket?.passengers.length ?? storePassengers.length;
   const fare = computeFare(journey.cls, count);
+  const totalPaid = store.totalFare ?? ticket?.total_fare ?? fare.total;
+
+  // Render the real settled status — a paid booking can be confirmed, RAC, or
+  // waitlisted — so never hardcode "Confirmed"/"CNF".
+  const status = (
+    ticket?.booking_status ??
+    store.bookingStatus ??
+    sp.get("status") ??
+    "confirmed"
+  ).toLowerCase();
+  const statusMeta = bookingStatusMeta(status);
+  const isConfirmed = status === "confirmed";
+  const heroClass = isConfirmed
+    ? "border-emerald-500/20 bg-[#102a1e]"
+    : "border-amber-500/20 bg-[#2a2410]";
+  const heroIconClass = isConfirmed ? "bg-emerald-500" : "bg-[#E8AA4D]";
+  const heroTitle = isConfirmed ? "Confirmed!" : statusMeta.label;
+  const heroLine = isConfirmed
+    ? `${count === 1 ? "Your passenger has" : "All passengers have"} CNF status. E-ticket emailed to ${email}.`
+    : `Payment received — ${
+        count === 1 ? "your passenger is" : `all ${count} passengers are`
+      } ${statusMeta.label}. We'll upgrade to CNF automatically if seats clear. Updates sent to ${email}.`;
+
+  // Normalised ticket rows: prefer the real PNR allotment, fall back to the
+  // store's selection (with computed fare) while the PNR is still loading.
+  const rows: TicketRow[] = ticket
+    ? ticket.passengers.map((p, i) => ({
+        key: String(i),
+        name: titleCase(p.passenger_name),
+        ageGender: `${p.passenger_age}${genderShort(p.passenger_gender)}`,
+        status: p.passenger_status,
+        statusClass: paxStatusClass(p.passenger_status),
+        seat: p.coach_number
+          ? `${p.coach_number} · ${p.seat_number} (${p.berth_type})`
+          : berthLabel(p.berth_type),
+        fare: p.fare,
+      }))
+    : storePassengers.map((p) => ({
+        key: p.id,
+        name: p.full_name,
+        ageGender: `${p.age}${genderShort(p.gender)}`,
+        status: statusMeta.short,
+        statusClass: statusMeta.className,
+        seat: berthLabel(p.berth),
+        fare: fare.perPax,
+      }));
+  const rowsLoading = rows.length === 0 && pnrQuery.isLoading;
 
   // We only carry the departure date; mark arrival as next-day for overnight legs.
   const depDate = journey.date ? fmt(journey.date, "EEE dd MMM") : "—";
@@ -78,8 +143,6 @@ export default function BookingConfirmedPage() {
       )
     : "—";
 
-  const receiptHref = bookingId ? `/bookings/${bookingId}/receipt` : "#";
-
   function copyPnr() {
     if (pnr === "—") return;
     navigator.clipboard?.writeText(pnr);
@@ -87,23 +150,39 @@ export default function BookingConfirmedPage() {
     setTimeout(() => setCopied(false), 1500);
   }
 
+  async function handleDownloadTicket() {
+    if (!bookingId || downloadTicket.isPending) return;
+    setTicketError(null);
+    try {
+      await downloadTicket.mutateAsync(bookingId);
+    } catch (e) {
+      setTicketError(
+        toApiError(e).message || "Couldn't download the e-ticket."
+      );
+    }
+  }
+
   return (
     <div className="app-container py-10">
       <div className="mx-auto w-full max-w-4xl space-y-6">
         {/* ── Success hero ── */}
-        <Card className="border-emerald-500/20 bg-[#102a1e] shadow-none">
+        <Card className={cn("shadow-none", heroClass)}>
           <CardContent className="flex flex-wrap items-start justify-between gap-6 p-8">
             <div className="flex items-start gap-4">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-emerald-500">
+              <span
+                className={cn(
+                  "flex h-11 w-11 shrink-0 items-center justify-center rounded-full",
+                  heroIconClass
+                )}
+              >
                 <Check className="h-6 w-6 text-white" strokeWidth={3} />
               </span>
               <div>
                 <h1 className="font-heading text-foreground text-4xl font-normal tracking-[-0.5px]">
-                  Confirmed!
+                  {heroTitle}
                 </h1>
                 <p className="text-muted-foreground mt-1.5 max-w-md text-sm">
-                  {count === 1 ? "Your passenger has" : "All passengers have"}{" "}
-                  CNF status. E-ticket emailed to {email}.
+                  {heroLine}
                 </p>
               </div>
             </div>
@@ -129,7 +208,7 @@ export default function BookingConfirmedPage() {
 
         {/* ── Ticket ── */}
         <Card className="bg-card/40 overflow-hidden border-white/8 py-0 shadow-none">
-          <div className="h-1 bg-[#d6a572]" />
+          <div className="h-1 bg-[#E8AA4D]" />
           <CardContent className="p-6 sm:p-8">
             <div className="flex items-start justify-between gap-6">
               <div className="min-w-0">
@@ -189,36 +268,46 @@ export default function BookingConfirmedPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {passengers.map((p, i) => (
+                {rows.map((r, i) => (
                   <TableRow
-                    key={p.id}
+                    key={r.key}
                     className="border-white/8 hover:bg-transparent"
                   >
                     <TableCell className="text-muted-foreground">
                       {i + 1}
                     </TableCell>
                     <TableCell className="text-foreground font-medium">
-                      {p.full_name}
+                      {r.name}
                       <span className="text-muted-foreground font-normal">
                         {" "}
-                        · {p.age}
-                        {genderShort(p.gender)}
+                        · {r.ageGender}
                       </span>
                     </TableCell>
                     <TableCell>
-                      <Badge className="border-0 bg-emerald-500/15 text-emerald-300">
-                        CNF
+                      <Badge className={cn("border-0", r.statusClass)}>
+                        {r.status}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {berthLabel(p.berth)}
+                      {r.seat}
                     </TableCell>
-                    <TableCell className="text-foreground text-right">
-                      {inr(fare.perPax)}
+                    <TableCell className="text-foreground text-right tabular-nums">
+                      {r.fare != null ? inr(r.fare) : "—"}
                     </TableCell>
                   </TableRow>
                 ))}
-                {count === 0 && (
+                {rowsLoading && (
+                  <TableRow className="hover:bg-transparent">
+                    <TableCell
+                      colSpan={5}
+                      className="text-muted-foreground py-6 text-center text-sm"
+                    >
+                      <Loader2 className="mr-2 inline h-4 w-4 animate-spin" />
+                      Fetching your allotted seats…
+                    </TableCell>
+                  </TableRow>
+                )}
+                {!rowsLoading && rows.length === 0 && (
                   <TableRow className="hover:bg-transparent">
                     <TableCell
                       colSpan={5}
@@ -234,23 +323,27 @@ export default function BookingConfirmedPage() {
             {/* Actions */}
             <div className="mt-6 flex flex-wrap gap-3">
               <Button
-                asChild
-                className="rounded-xl bg-[#d6a572] font-medium text-[#3d2817] hover:bg-[#c89a64]"
+                onClick={handleDownloadTicket}
+                disabled={!bookingId || downloadTicket.isPending}
+                className="rounded-xl bg-[#E8AA4D] font-medium text-[#3d2817] hover:bg-[#D09840]"
               >
-                <Link href={receiptHref}>
+                {downloadTicket.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
                   <Download className="h-4 w-4" />
-                  Download E-Ticket PDF
-                </Link>
+                )}
+                {downloadTicket.isPending
+                  ? "Preparing…"
+                  : "Download E-Ticket PDF"}
               </Button>
               <Button
-                asChild
                 variant="outline"
+                onClick={() => setReceiptOpen(true)}
+                disabled={!bookingId}
                 className="rounded-xl border-white/12 bg-transparent hover:bg-white/5"
               >
-                <Link href={receiptHref}>
-                  <ReceiptText className="h-4 w-4" />
-                  View Receipt
-                </Link>
+                <ReceiptText className="h-4 w-4" />
+                View Receipt
               </Button>
               <Button
                 asChild
@@ -273,6 +366,10 @@ export default function BookingConfirmedPage() {
                 </Link>
               </Button>
             </div>
+
+            {ticketError && (
+              <p className="mt-3 text-sm text-red-300">{ticketError}</p>
+            )}
           </CardContent>
         </Card>
 
@@ -281,7 +378,7 @@ export default function BookingConfirmedPage() {
           <CardContent className="grid grid-cols-2 gap-6 p-6 sm:grid-cols-4">
             <Summary label="Total paid">
               <span className="font-heading text-foreground text-xl">
-                {inr(fare.total)}
+                {inr(totalPaid)}
               </span>
             </Summary>
             <Summary label="Method">
@@ -290,7 +387,10 @@ export default function BookingConfirmedPage() {
               </span>
             </Summary>
             <Summary label="Txn ID">
-              <span className="text-foreground truncate font-mono text-sm">
+              <span
+                title={payment?.txnId ?? undefined}
+                className="text-foreground block truncate font-mono text-sm"
+              >
                 {payment?.txnId ?? "—"}
               </span>
             </Summary>
@@ -302,8 +402,45 @@ export default function BookingConfirmedPage() {
           </CardContent>
         </Card>
       </div>
+
+      <ReceiptDialog
+        open={receiptOpen}
+        onOpenChange={setReceiptOpen}
+        bookingId={bookingId}
+      />
     </div>
   );
+}
+
+type TicketRow = {
+  key: string;
+  name: string;
+  ageGender: string;
+  status: string;
+  statusClass: string;
+  seat: string;
+  fare: number | null;
+};
+
+function titleCase(s: string): string {
+  return s
+    .split(/\s+/)
+    .map((w) => w[0]?.toUpperCase() + w.slice(1).toLowerCase())
+    .join(" ");
+}
+
+function paxStatusClass(status: string): string {
+  switch (status?.toUpperCase()) {
+    case "CNF":
+      return "bg-emerald-500/15 text-emerald-300";
+    case "RAC":
+    case "WL":
+      return "bg-amber-500/15 text-amber-300";
+    case "CAN":
+      return "bg-red-500/15 text-red-300";
+    default:
+      return "text-muted-foreground bg-white/10";
+  }
 }
 
 function Summary({

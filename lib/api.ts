@@ -32,17 +32,26 @@ api.interceptors.response.use(
 export type ApiError = {
   status: number;
   message: string;
+  // Backend error code from the APIResponse envelope (e.g. "RM-AUTH-018"),
+  // when present. Use it for code-specific UX (see the auth error table).
+  code?: string;
 };
 
 export function toApiError(err: unknown): ApiError {
   if (err instanceof AxiosError) {
     const status = err.response?.status ?? 0;
     const data = err.response?.data as
-      | { message?: string; detail?: string }
+      | {
+          message?: string;
+          detail?: string;
+          code?: string;
+          errors?: Array<{ code?: string; message?: string }>;
+        }
       | undefined;
     return {
       status,
       message: data?.message ?? data?.detail ?? err.message ?? "Request failed",
+      code: data?.code ?? data?.errors?.[0]?.code,
     };
   }
   return { status: 0, message: "Network error" };

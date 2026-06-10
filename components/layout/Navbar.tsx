@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   Bell,
   ChevronDown,
@@ -58,18 +58,31 @@ function getFullName(
 }
 
 const navLinks = [
-  { label: "Search", href: "/" },
-  { label: "PNR Status", href: "/pnr" },
-  { label: "My Bookings", href: "/bookings" },
-  { label: "Help", href: "/help" },
+  { label: "Search", href: "/", activePath: "/" },
+  { label: "PNR Status", href: "/pnr", activePath: "/pnr" },
+  { label: "My Bookings", href: "/bookings", activePath: "/bookings" },
+  { label: "Help", href: "/help", activePath: "/help" },
 ];
 
 export default function Navbar() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const status = useAuthStore((s) => s.status);
   const user = useAuthStore((s) => s.user);
   const reset = useAuthStore((s) => s.reset);
+
+  const isActive = (activePath: string) => {
+    if (activePath === "/") return pathname === "/";
+    if (pathname === activePath || pathname.startsWith(activePath + "/"))
+      return true;
+    // When redirected to login/register, highlight the intended destination
+    if (pathname === "/login" || pathname === "/register") {
+      const next = searchParams.get("next") ?? "";
+      if (next === activePath || next.startsWith(activePath + "/")) return true;
+    }
+    return false;
+  };
 
   const handleLogout = async () => {
     try {
@@ -89,10 +102,10 @@ export default function Navbar() {
         <div className="flex items-center gap-10">
           <Link href="/" className="flex items-center gap-3">
             <Image
-              src="/images/logo.png"
+              src="/images/new_logo.png"
               alt="RailMind Logo"
-              width={80}
-              height={40}
+              width={100}
+              height={50}
               priority
             />
             {/* <div className="flex flex-col leading-none">
@@ -112,7 +125,7 @@ export default function Navbar() {
                 key={link.href}
                 href={link.href}
                 className={
-                  pathname === link.href
+                  isActive(link.activePath)
                     ? "rounded-lg bg-[#e8dcc8] px-5 py-2 text-sm font-medium text-[#3d2817]"
                     : "rounded-lg px-5 py-2 text-sm font-normal text-white/60 hover:text-white"
                 }
@@ -125,8 +138,8 @@ export default function Navbar() {
 
         {/* ── RIGHT SIDE ── */}
         <div className="flex items-center gap-4">
-          <button className="flex items-center gap-2 rounded-full border border-white/15 px-4 py-1.5 text-sm text-[#ac6a0a]">
-            <span className="h-2 w-2 rounded-full bg-amber-500" />
+          <button className="flex items-center gap-2 rounded-full border border-white/15 px-4 py-1.5 text-sm text-[#E8AA4D]">
+            <span className="h-2 w-2 rounded-full bg-[#E8AA4D]" />
             AI Assistant
           </button>
 
@@ -155,7 +168,7 @@ export default function Navbar() {
                           alt={getDisplayName(user.first_name, user.email)}
                         />
                       )}
-                      <AvatarFallback className="bg-[#d6a572] text-[11px] font-semibold text-[#3d2817]">
+                      <AvatarFallback className="bg-[#E8AA4D] text-[11px] font-semibold text-[#3d2817]">
                         {getInitials(
                           user.first_name,
                           user.last_name,
@@ -219,7 +232,7 @@ export default function Navbar() {
               </Link>
               <Link
                 href="/register"
-                className="rounded-lg bg-amber-600 px-5 py-2 text-sm font-medium text-white hover:bg-amber-500"
+                className="rounded-lg bg-[#E8AA4D] px-5 py-2 text-sm font-medium text-[#1a1a18] hover:bg-[#D09840]"
               >
                 Register
               </Link>

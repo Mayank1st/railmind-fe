@@ -256,9 +256,9 @@ export default function BookingPassengersPage() {
   return (
     <div className="app-container-narrow py-8">
       {/* Journey summary bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#d6a572]/20 bg-[#1f1810] px-5 py-3.5 text-sm">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#E8AA4D]/20 bg-[#1f1810] px-5 py-3.5 text-sm">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          <span className="font-medium text-[#d6a572]">{train}</span>
+          <span className="font-medium text-[#E8AA4D]">{train}</span>
           <span className="text-foreground font-medium">{name}</span>
           <span className="text-muted-foreground">
             {from} {dep} <ArrowRight className="inline h-3.5 w-3.5" /> {to}{" "}
@@ -288,10 +288,10 @@ export default function BookingPassengersPage() {
           </p>
 
           {/* Tip banner */}
-          <div className="mt-6 flex items-start gap-3 rounded-2xl border border-[#d6a572]/25 bg-gradient-to-r from-[#3a2a12] to-[#241a0c] px-5 py-4 text-sm">
-            <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[#d6a572]" />
+          <div className="mt-6 flex items-start gap-3 rounded-2xl border border-[#E8AA4D]/25 bg-gradient-to-r from-[#3a2a12] to-[#241a0c] px-5 py-4 text-sm">
+            <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[#E8AA4D]" />
             <p className="text-white/80">
-              <span className="font-semibold text-[#e6bd8a]">
+              <span className="font-semibold text-[#F0BF6A]">
                 Lower-berth tip:
               </span>{" "}
               Passengers above 60 or female travellers get auto lower-berth
@@ -325,7 +325,7 @@ export default function BookingPassengersPage() {
                         key={p.id}
                         className={cn(
                           "flex items-center gap-4 px-6 py-4 transition-colors",
-                          isSelected && "bg-[#d6a572]/[0.06]"
+                          isSelected && "bg-[#E8AA4D]/[0.06]"
                         )}
                       >
                         <Checkbox
@@ -342,7 +342,7 @@ export default function BookingPassengersPage() {
                               {p.age} / {genderShort(p.gender)}
                             </span>
                             {tag && (
-                              <Badge className="h-5 bg-[#3d2817] px-2 text-[10px] font-semibold tracking-wide text-[#d6a572]">
+                              <Badge className="h-5 bg-[#3d2817] px-2 text-[10px] font-semibold tracking-wide text-[#E8AA4D]">
                                 {tag}
                               </Badge>
                             )}
@@ -489,7 +489,7 @@ export default function BookingPassengersPage() {
               <Button
                 onClick={continueToReview}
                 disabled={count === 0}
-                className="mt-5 w-full rounded-xl bg-[#d6a572] py-5 font-medium text-[#3d2817] hover:bg-[#c89a64]"
+                className="mt-5 w-full rounded-xl bg-[#E8AA4D] py-5 font-medium text-[#3d2817] hover:bg-[#D09840]"
               >
                 Continue to Review
                 <ArrowRight className="h-4 w-4" />
@@ -564,7 +564,7 @@ function AddPassengerForm({
           <Button
             onClick={() => onSave(draft)}
             disabled={!valid || saving}
-            className="rounded-full bg-[#d6a572] font-medium text-[#3d2817] hover:bg-[#c89a64]"
+            className="rounded-full bg-[#E8AA4D] font-medium text-[#3d2817] hover:bg-[#D09840]"
           >
             {saving && <Loader2 className="h-4 w-4 animate-spin" />}
             Save passenger

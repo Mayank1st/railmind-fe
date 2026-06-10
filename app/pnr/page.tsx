@@ -120,7 +120,7 @@ export default function PnrPage() {
             <button
               key={item.pnr}
               onClick={() => router.push(`/pnr/${item.pnr}`)}
-              className="flex cursor-pointer items-center justify-between rounded-xl border border-white/10 bg-[#1e1e1c] px-5 py-4 text-left hover:border-white/20"
+              className="flex cursor-pointer items-center justify-between rounded-xl border border-white/10 bg-[#121713] px-5 py-4 text-left hover:border-white/20"
             >
               <div>
                 <p className="text-foreground font-mono text-base font-medium">

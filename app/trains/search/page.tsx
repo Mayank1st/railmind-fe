@@ -221,7 +221,7 @@ export default function TrainSearchPage() {
   if (isLoading) {
     return (
       <main className="min-h-screen bg-[#1a1a18]">
-        <div className="border-b border-white/10 bg-[#1e1e1c] py-4">
+        <div className="border-b border-white/10 bg-[#121713] py-4">
           <div className="app-container">
             <div className="h-6 w-96 animate-pulse rounded bg-white/5" />
           </div>
@@ -293,7 +293,7 @@ export default function TrainSearchPage() {
       <div className="app-container flex gap-12 py-6">
         {/* ── LEFT SIDEBAR — Filters ── */}
         <aside className="sticky top-24 w-64 shrink-0 self-start">
-          <div className="max-h-[calc(100vh-7rem)] overflow-y-auto rounded-xl border border-white/10 bg-[#1e1e1c] p-5">
+          <div className="max-h-[calc(100vh-7rem)] overflow-y-auto rounded-xl border border-white/10 bg-[#121713] p-5">
             <div className="mb-5 flex items-center justify-between">
               <h3 className="text-foreground text-sm font-medium">Filters</h3>
               <button
@@ -390,7 +390,7 @@ export default function TrainSearchPage() {
               </p>
             </div>
             <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="text-foreground w-48 cursor-pointer rounded-lg border-white/10 bg-[#1e1e1c] text-sm">
+              <SelectTrigger className="text-foreground w-48 cursor-pointer rounded-lg border-white/10 bg-[#121713] text-sm">
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
               <SelectContent className="border-white/10 bg-[#2a2a28]">
@@ -428,7 +428,7 @@ export default function TrainSearchPage() {
             ))}
 
             {filteredTrains.length === 0 && (
-              <div className="rounded-xl border border-white/10 bg-[#1e1e1c] p-12 text-center">
+              <div className="rounded-xl border border-white/10 bg-[#121713] p-12 text-center">
                 <p className="text-foreground/50">
                   No trains match your filters
                 </p>
@@ -584,7 +584,7 @@ function TrainCard({
           goToDetails();
         }
       }}
-      className="group focus-visible:border-accent-warm/40 cursor-pointer overflow-hidden rounded-xl border border-white/10 bg-[#1e1e1c] transition-colors hover:border-white/25 hover:bg-[#22221f] focus-visible:outline-none"
+      className="group focus-visible:border-accent-warm/40 cursor-pointer overflow-hidden rounded-xl border border-white/10 bg-[#121713] transition-colors hover:border-white/25 hover:bg-[#22221f] focus-visible:outline-none"
     >
       <div className="bg-accent-warm/40 h-1" />
 
