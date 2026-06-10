@@ -15,5 +15,8 @@
   },
   "[css]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
-  }
+  },
+  "css.validate": false, // ← VS Code CSS validator off
+  "scss.validate": false, // ← SCSS validator off
+  "less.validate": false // ← LESS validator off
 }
