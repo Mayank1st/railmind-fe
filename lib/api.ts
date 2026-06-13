@@ -1,7 +1,5 @@
 import axios, { AxiosError } from "axios";
-
-export const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
+export const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api/v1";
 
 export const api = axios.create({
   baseURL: API_URL,
@@ -10,9 +8,33 @@ export const api = axios.create({
 });
 
 // Global session guard: if a request comes back 401 (token expired / session
-// revoked while the user is active), bounce to /login with a `next` so they
-// return where they were. Skips /auth/* calls (e.g. the /auth/me guest-check
-// and login failures handle their own 401s) and avoids redirect loops.
+// Transparent retry for GETs that die on transient transport failures —
+// the dev proxy surfaces an upstream ECONNRESET (stale keep-alive socket on
+// the GCP box) as a bare 500/502/504 or a network error; a fresh attempt
+// opens a new socket and succeeds.
+const RETRYABLE_STATUS = new Set([500, 502, 504]);
+const MAX_RETRIES = 2;
+
+api.interceptors.response.use(undefined, async (error: AxiosError) => {
+  const config = error.config as
+    | (typeof error.config & { __retryCount?: number })
+    | undefined;
+  const status = error.response?.status;
+  const transient = status === undefined || RETRYABLE_STATUS.has(status);
+  if (
+    config &&
+    config.method?.toLowerCase() === "get" &&
+    transient &&
+    (config.__retryCount ?? 0) < MAX_RETRIES
+  ) {
+    const attempt = (config.__retryCount ?? 0) + 1;
+    config.__retryCount = attempt;
+    await new Promise((r) => setTimeout(r, 300 * attempt));
+    return api.request(config);
+  }
+  return Promise.reject(error);
+});
+
 api.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
@@ -32,8 +54,6 @@ api.interceptors.response.use(
 export type ApiError = {
   status: number;
   message: string;
-  // Backend error code from the APIResponse envelope (e.g. "RM-AUTH-018"),
-  // when present. Use it for code-specific UX (see the auth error table).
   code?: string;
 };
 

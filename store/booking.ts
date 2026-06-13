@@ -31,6 +31,8 @@ type BookingState = {
   totalFare: number | null;
   availability: string | null;
   bookingStatus: string | null;
+  paidBookingId: string | null;
+  pnr: string | null;
   completedStep: number;
   setBooking: (booking: {
     journey: BookingJourney;
@@ -44,6 +46,7 @@ type BookingState = {
   }) => void;
   setPayment: (payment: BookingPayment | null) => void;
   setBookingStatus: (status: string | null) => void;
+  setPaid: (bookingId: string, pnr: string | null) => void;
   markStepComplete: (step: number) => void;
   clear: () => void;
 };
@@ -57,12 +60,23 @@ export const useBookingStore = create<BookingState>((set) => ({
   totalFare: null,
   availability: null,
   bookingStatus: null,
+  paidBookingId: null,
+  pnr: null,
   completedStep: 0,
   setBooking: (booking) => set(booking),
   setBookingResult: ({ bookingId, totalFare, availability }) =>
-    set({ bookingId, totalFare, availability }),
+    set({
+      bookingId,
+      totalFare,
+      availability,
+      payment: null,
+      bookingStatus: null,
+      paidBookingId: null,
+      pnr: null,
+    }),
   setPayment: (payment) => set({ payment }),
   setBookingStatus: (bookingStatus) => set({ bookingStatus }),
+  setPaid: (paidBookingId, pnr) => set({ paidBookingId, pnr }),
   markStepComplete: (step) =>
     set((s) => ({ completedStep: Math.max(s.completedStep, step) })),
   clear: () =>
@@ -75,6 +89,8 @@ export const useBookingStore = create<BookingState>((set) => ({
       totalFare: null,
       availability: null,
       bookingStatus: null,
+      paidBookingId: null,
+      pnr: null,
       completedStep: 0,
     }),
 }));

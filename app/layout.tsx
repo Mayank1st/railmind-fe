@@ -6,6 +6,7 @@ import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { AuthProvider } from "@/components/providers/AuthProvider";
 import { QueryProvider } from "@/components/providers/QueryProvider";
+import { StationsPrefetch } from "@/components/providers/StationsPrefetch";
 
 const AUTH_COOKIE = process.env.NEXT_PUBLIC_AUTH_COOKIE_NAME ?? "access_token";
 
@@ -41,6 +42,7 @@ export default async function RootLayout({
     >
       <body className="flex min-h-full flex-col">
         <QueryProvider>
+          <StationsPrefetch />
           <AuthProvider initialAuthed={initialAuthed}>
             <Navbar />
             {children}

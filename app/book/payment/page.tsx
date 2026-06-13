@@ -24,6 +24,7 @@ import {
 } from "@/lib/payments";
 import { useBookingStore } from "@/store/booking";
 import { usePassengers } from "@/hooks/usePassengers";
+import { useBooking } from "@/hooks/useBooking";
 import { useInitiatePayment } from "@/hooks/useInitiatePayment";
 import { useProcessPayment } from "@/hooks/useProcessPayment";
 import { useCancelBooking } from "@/hooks/useCancelBooking";
@@ -105,13 +106,46 @@ export default function BookingPaymentPage() {
   const [error, setError] = useState<string | null>(null);
 
   // booking_id: store-first, URL fallback (refresh / direct nav).
-  const bookingId = store.bookingId ?? sp.get("booking_id") ?? "";
+  const urlBookingId = sp.get("booking_id") ?? "";
+  const bookingId = store.bookingId ?? urlBookingId;
+
+  // ── Re-payment guard ──────────────────────────────────────────────────────
+  const paidInStore = Boolean(bookingId) && store.paidBookingId === bookingId;
+  const coldStore = !store.bookingId && Boolean(urlBookingId);
+  const verify = useBooking(coldStore && !paidInStore ? urlBookingId : "");
+  const serverStatus = verify.data?.booking_status?.toLowerCase() ?? null;
+  const serverPaid =
+    serverStatus === "confirmed" ||
+    serverStatus === "rac" ||
+    serverStatus === "waitlisted";
+  const serverCancelled = serverStatus === "cancelled";
+
+  const verifying = coldStore && !paidInStore && verify.isLoading;
+  const redirectToConfirmed = paidInStore || serverPaid;
 
   useEffect(() => {
-    if (seconds <= 0) return;
+    if (!redirectToConfirmed) return;
+    const qs = new URLSearchParams(sp.toString());
+    const pnr = store.pnr ?? verify.data?.pnr_number;
+    const status = store.bookingStatus ?? serverStatus;
+    if (pnr) qs.set("pnr", pnr);
+    if (status) qs.set("status", status);
+    router.replace(`/book/confirmed?${qs.toString()}`);
+  }, [
+    redirectToConfirmed,
+    sp,
+    store.pnr,
+    store.bookingStatus,
+    verify.data,
+    serverStatus,
+    router,
+  ]);
+
+  useEffect(() => {
+    if (redirectToConfirmed || verifying || seconds <= 0) return;
     const t = setInterval(() => setSeconds((s) => (s > 0 ? s - 1 : 0)), 1000);
     return () => clearInterval(t);
-  }, [seconds]);
+  }, [redirectToConfirmed, verifying, seconds]);
 
   const journey = useMemo(
     () =>
@@ -240,19 +274,48 @@ export default function BookingPaymentPage() {
         paidAt: res.paid_at,
       });
       store.setBookingStatus(res.booking_status);
+      store.setPaid(bookingId, res.booking_pnr);
       store.markStepComplete(3); // payment done → Confirmed unlocks
       const qs = new URLSearchParams(sp.toString());
       qs.set("pnr", res.booking_pnr);
       if (res.booking_status) qs.set("status", res.booking_status);
-      router.push(`/book/confirmed?${qs.toString()}`);
+      router.replace(`/book/confirmed?${qs.toString()}`);
     } catch (e) {
       setError(toApiError(e).message);
     }
   }
 
-  // Terminal state: payment failed → booking cancelled, seat released. Don't
-  // let the user retry the dead booking; send them to rebook instead.
-  if (cancelledReason) {
+  if (verifying) {
+    return (
+      <div className="app-container-narrow py-8">
+        <Card className="mx-auto mt-6 max-w-lg border-white/8 shadow-none">
+          <CardContent className="flex flex-col items-center gap-3 p-8 text-center">
+            <Loader2 className="h-6 w-6 animate-spin text-[#E8AA4D]" />
+            <p className="text-muted-foreground text-sm">
+              Checking your booking…
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (redirectToConfirmed) {
+    return (
+      <div className="app-container-narrow py-8">
+        <Card className="mx-auto mt-6 max-w-lg border-white/8 shadow-none">
+          <CardContent className="flex flex-col items-center gap-3 p-8 text-center">
+            <Loader2 className="h-6 w-6 animate-spin text-[#E8AA4D]" />
+            <p className="text-muted-foreground text-sm">
+              This booking is already paid — taking you to your ticket…
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (cancelledReason || serverCancelled) {
     return (
       <div className="app-container-narrow py-8">
         <Card className="mx-auto mt-6 max-w-lg border-red-500/20 bg-red-500/[0.04] shadow-none">
@@ -262,11 +325,12 @@ export default function BookingPaymentPage() {
             </span>
             <div>
               <h1 className="font-heading text-foreground text-2xl">
-                Payment failed
+                {cancelledReason ? "Payment failed" : "Booking cancelled"}
               </h1>
               <p className="text-muted-foreground mt-2 text-sm">
-                {cancelledReason} The held seat has been released, so
-                you&apos;ll need to book again.
+                {cancelledReason
+                  ? `${cancelledReason} The held seat has been released, so you'll need to book again.`
+                  : "This booking was cancelled and the held seat released — you'll need to book again."}
               </p>
             </div>
             <div className="mt-2 flex flex-wrap justify-center gap-3">

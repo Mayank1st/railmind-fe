@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -19,10 +20,15 @@ import { differenceInCalendarDays, format, isValid, parseISO } from "date-fns";
 import { useAuthStore } from "@/store/auth";
 import { useJourneys } from "@/hooks/useJourneys";
 import { usePassengers } from "@/hooks/usePassengers";
-import { bookingStatusMeta, type Journey } from "@/lib/bookings";
+import {
+  bookingStatusMeta,
+  type Journey,
+  type JourneyAction,
+} from "@/lib/bookings";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 function parseJourneyDate(iso: string): Date | null {
   const d = parseISO(iso);
@@ -49,8 +55,14 @@ export default function BookingsPage() {
   const passengers = usePassengers();
   const savedCount = passengers.data?.length ?? 0;
 
+  // "My bookings" tab — each tab is its own API action (UPCOMING / PAST) and we
+  // surface only the top 3; the full, paginated list lives behind "View all".
+  const [tab, setTab] = useState<JourneyAction>("UPCOMING");
+  const activeList = tab === "UPCOMING" ? upcoming : past;
+  const topThree = activeList.data?.journeys.slice(0, 3) ?? [];
+
   const nextJourney = upcoming.data?.journeys[0] ?? null;
-  const recent = past.data?.journeys.slice(0, 5) ?? [];
+  const anyBookings = (upcoming.data?.count ?? 0) + (past.data?.count ?? 0) > 0;
   const allJourneys = [
     ...(upcoming.data?.journeys ?? []),
     ...(past.data?.journeys ?? []),
@@ -102,31 +114,51 @@ export default function BookingsPage() {
 
       <div className="mt-10 grid grid-cols-1 gap-6 lg:grid-cols-3">
         <section className="lg:col-span-2">
-          <div className="mb-4 flex items-end justify-between">
-            <h2 className="font-heading text-foreground text-2xl">
-              Recent bookings
-            </h2>
-            {past.data && past.data.count > recent.length && (
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-4">
+              <h2 className="font-heading text-foreground text-2xl">
+                My bookings
+              </h2>
+              <ToggleGroup
+                type="single"
+                value={tab}
+                onValueChange={(v) => v && setTab(v as JourneyAction)}
+                className="flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] p-1"
+              >
+                {(["UPCOMING", "PAST"] as const).map((t) => (
+                  <ToggleGroupItem
+                    key={t}
+                    value={t}
+                    className="text-muted-foreground hover:text-foreground h-auto flex-none cursor-pointer rounded-full px-3.5 py-1.5 text-sm font-medium first:rounded-full last:rounded-full hover:bg-transparent data-[state=on]:bg-[#E8AA4D] data-[state=on]:text-[#3d2817]"
+                  >
+                    {t === "UPCOMING" ? "Upcoming" : "Past"}
+                  </ToggleGroupItem>
+                ))}
+              </ToggleGroup>
+            </div>
+            {anyBookings && (
               <Link
                 href="/bookings/all"
-                className="text-sm text-[#E8AA4D] hover:underline"
+                className="shrink-0 text-sm text-[#E8AA4D] hover:underline"
               >
                 View all →
               </Link>
             )}
           </div>
 
-          {past.isLoading ? (
+          {activeList.isLoading ? (
             <RecentSkeleton />
-          ) : recent.length === 0 ? (
+          ) : topThree.length === 0 ? (
             <Card className="bg-card/40">
               <CardContent className="text-muted-foreground py-8 text-center text-sm">
-                No past journeys yet.
+                {tab === "UPCOMING"
+                  ? "No upcoming journeys."
+                  : "No past journeys yet."}
               </CardContent>
             </Card>
           ) : (
             <ul className="space-y-2">
-              {recent.map((j) => (
+              {topThree.map((j) => (
                 <RecentRow key={j.booking_id} journey={j} />
               ))}
             </ul>
