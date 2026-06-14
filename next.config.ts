@@ -1,7 +1,11 @@
 import type { NextConfig } from "next";
 
-const API_PROXY_TARGET =
+const RAW_API_PROXY_TARGET =
   process.env.API_PROXY_TARGET ?? "https://railmind.ddns.net";
+const API_PROXY_TARGET = RAW_API_PROXY_TARGET.replace(/\/+$/, "").replace(
+  /\/api(?:\/v\d+)?$/,
+  ""
+);
 
 const nextConfig: NextConfig = {
   skipTrailingSlashRedirect: true,
