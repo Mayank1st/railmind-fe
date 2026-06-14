@@ -17,6 +17,8 @@ import {
 import { useBookingStore } from "@/store/booking";
 import { usePassengers } from "@/hooks/usePassengers";
 import { useCreatePassenger } from "@/hooks/useCreatePassenger";
+import { useFarePreview } from "@/hooks/useFarePreview";
+import { inr } from "@/lib/fare";
 import {
   draftToPayload,
   EMPTY_DRAFT,
@@ -202,7 +204,22 @@ export default function BookingPassengersPage() {
   ]);
 
   const count = selected.size;
-  const total = count * fare;
+  const total = count * fare; // estimate fallback
+  const farePreview = useFarePreview(
+    {
+      train_number: train,
+      from_station: from,
+      to_station: to,
+      train_class: cls,
+      quota,
+      journey_date: dateRaw ?? "",
+      passenger_count: count,
+      train_type: trainType,
+    },
+    Boolean(train && from && to && dateRaw) && count > 0
+  );
+  const fareTotal = farePreview.data?.total_fare ?? null;
+  const fareLoading = count > 0 && farePreview.isLoading;
 
   function select(id: string) {
     setSelected((prev) => {
@@ -493,10 +510,16 @@ export default function BookingPassengersPage() {
 
               <div className="mt-5 flex items-center justify-between rounded-lg bg-white/[0.03] px-4 py-3 text-sm">
                 <span className="text-muted-foreground">
-                  {count} × ₹{fare} base fare
+                  {count} passenger{count === 1 ? "" : "s"} · total fare
                 </span>
                 <span className="text-foreground font-medium">
-                  ₹{total.toLocaleString("en-IN")}
+                  {fareLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : fareTotal != null ? (
+                    inr(fareTotal)
+                  ) : (
+                    inr(total)
+                  )}
                 </span>
               </div>
 
