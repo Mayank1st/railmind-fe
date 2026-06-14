@@ -78,6 +78,7 @@ export default function BookingPassengersPage() {
   const dateRaw = sp.get("date");
   const cls = sp.get("class") ?? "SL";
   const quota = sp.get("quota") ?? "GN";
+  const trainType = sp.get("type") ?? "";
 
   const dateLabel = useMemo(() => {
     if (!dateRaw) return "—";
@@ -165,7 +166,18 @@ export default function BookingPassengersPage() {
       .filter((p) => selected.has(p.id))
       .map((p) => ({ ...p, berth: berth[p.id] ?? p.berth_preference ?? "NP" }));
     setBooking({
-      journey: { train, name, from, to, dep, arr, date: dateRaw, cls, quota },
+      journey: {
+        train,
+        name,
+        from,
+        to,
+        dep,
+        arr,
+        date: dateRaw,
+        cls,
+        quota,
+        train_type: trainType,
+      },
       passengers: chosen,
       contact: { email, phone },
     });
@@ -185,6 +197,7 @@ export default function BookingPassengersPage() {
     dateRaw,
     cls,
     quota,
+    trainType,
     setBooking,
   ]);
 
@@ -247,6 +260,7 @@ export default function BookingPassengersPage() {
       arr,
       class: cls,
       quota,
+      ...(trainType ? { type: trainType } : {}),
       ...(dateRaw ? { date: dateRaw } : {}),
       pax: Array.from(selected).join(","),
     });

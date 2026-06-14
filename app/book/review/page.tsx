@@ -10,6 +10,7 @@ import { toApiError } from "@/lib/api";
 import { useBookingStore, type BookingPassenger } from "@/store/booking";
 import { usePassengers } from "@/hooks/usePassengers";
 import { useCreateBooking } from "@/hooks/useCreateBooking";
+import { useFarePreview } from "@/hooks/useFarePreview";
 import { BookingStepper } from "@/components/booking/booking-stepper";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -126,7 +127,6 @@ export default function BookingReviewPage() {
   );
   const duration = durationLabel(journey.dep, journey.arr);
 
-  // Fare breakdown (display-only — no fare API yet).
   const base = count * fare;
   const reservation = 40;
   const superfast = 45;
@@ -135,6 +135,49 @@ export default function BookingReviewPage() {
     : 0;
   const irctc = Math.round(count * 7.875 * 100) / 100;
   const total = base + reservation + superfast + gst + irctc;
+
+  const trainTypeParam = store.journey?.train_type ?? sp.get("type") ?? "";
+  const fareEnabled =
+    Boolean(journey.train && journey.from && journey.to && journey.date) &&
+    count > 0;
+  const farePreview = useFarePreview(
+    {
+      train_number: journey.train,
+      from_station: journey.from,
+      to_station: journey.to,
+      train_class: journey.cls,
+      quota: journey.quota,
+      journey_date: toApiDate(journey.date),
+      passenger_count: count,
+      train_type: trainTypeParam,
+    },
+    fareEnabled
+  );
+  const fareLoading = fareEnabled && farePreview.isLoading;
+  const fp = farePreview.data;
+  const fareView = fp
+    ? {
+        perPax: fp.passenger_count
+          ? fp.base_fare / fp.passenger_count
+          : fp.base_fare,
+        base: fp.base_fare,
+        reservation: fp.reservation_charge,
+        superfast: fp.superfast_charge,
+        tatkal: fp.tatkal_charge,
+        gst: fp.gst,
+        irctc: fp.irctc_charge,
+        total: fp.total_fare,
+      }
+    : {
+        perPax: fare,
+        base,
+        reservation,
+        superfast,
+        tatkal: 0,
+        gst,
+        irctc,
+        total,
+      };
 
   function editPassengers() {
     const qs = new URLSearchParams({
@@ -146,6 +189,7 @@ export default function BookingReviewPage() {
       arr: journey.arr,
       class: journey.cls,
       quota: journey.quota,
+      ...(trainTypeParam ? { type: trainTypeParam } : {}),
       ...(journey.date ? { date: journey.date } : {}),
     });
     router.push(`/book/passengers?${qs.toString()}`);
@@ -377,25 +421,49 @@ export default function BookingReviewPage() {
                 Fare breakdown
               </h2>
 
-              <dl className="mt-5 space-y-3 text-sm">
-                <FareRow
-                  label={`Base fare (${count} × ₹${fare})`}
-                  value={inr(base)}
-                />
-                <FareRow label="Reservation charge" value={inr(reservation)} />
-                <FareRow label="Superfast charge" value={inr(superfast)} />
-                <FareRow label="GST (5%)" value={inr(gst)} />
-                <FareRow label="IRCTC service charge" value={inr(irctc)} />
-              </dl>
+              {fareLoading ? (
+                <div className="text-muted-foreground mt-5 flex items-center gap-2 py-6 text-sm">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Calculating fare…
+                </div>
+              ) : (
+                <>
+                  <dl className="mt-5 space-y-3 text-sm">
+                    <FareRow
+                      label={`Base fare (${count} × ₹${Math.round(fareView.perPax)})`}
+                      value={inr(fareView.base)}
+                    />
+                    <FareRow
+                      label="Reservation charge"
+                      value={inr(fareView.reservation)}
+                    />
+                    <FareRow
+                      label="Superfast charge"
+                      value={inr(fareView.superfast)}
+                    />
+                    {fareView.tatkal > 0 && (
+                      <FareRow
+                        label="Tatkal charge"
+                        value={inr(fareView.tatkal)}
+                      />
+                    )}
+                    <FareRow label="GST" value={inr(fareView.gst)} />
+                    <FareRow
+                      label="IRCTC service charge"
+                      value={inr(fareView.irctc)}
+                    />
+                  </dl>
 
-              <div className="my-5 h-px bg-white/10" />
+                  <div className="my-5 h-px bg-white/10" />
 
-              <div className="flex items-center justify-between">
-                <span className="text-foreground font-medium">Total</span>
-                <span className="font-heading text-foreground text-2xl">
-                  {inr(total)}
-                </span>
-              </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-foreground font-medium">Total</span>
+                    <span className="font-heading text-foreground text-2xl">
+                      {inr(fareView.total)}
+                    </span>
+                  </div>
+                </>
+              )}
 
               <label className="mt-5 flex cursor-pointer items-start gap-2.5 text-sm">
                 <Checkbox

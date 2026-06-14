@@ -575,6 +575,7 @@ function TrainCard({
       arr: train.arrives ?? "",
       class: classCode,
       quota,
+      ...(train.train_type ? { type: train.train_type } : {}),
       ...(date ? { date } : {}),
     });
     router.push(`/book/passengers?${qs.toString()}`);

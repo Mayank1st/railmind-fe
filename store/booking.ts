@@ -11,6 +11,7 @@ export type BookingJourney = {
   date: string | null;
   cls: string;
   quota: string;
+  train_type?: string;
 };
 
 export type BookingPassenger = Passenger & { berth: string };
