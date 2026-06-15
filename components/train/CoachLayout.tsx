@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { format, parseISO } from "date-fns";
 import { Train as TrainIcon, Sparkles, Info } from "lucide-react";
@@ -196,6 +196,27 @@ export function CoachLayout({
   const routeLabel =
     fromCode && toCode ? `${fromCode} → ${toCode}` : "Pick stations";
 
+  // Train composition broken into fixed-size rows so the wrap points are
+  // deterministic — each row is then joined to the next by a return-sweep arc.
+  const ROW_SIZE = 4;
+  type TrainItem = {
+    kind: "loco" | "coach" | "pantry" | "guard";
+    key: string;
+    coach?: TrainCoach;
+  };
+  const trainItems: TrainItem[] = [
+    { kind: "loco", key: "loco" },
+    ...filteredCoaches.map(
+      (c): TrainItem => ({ kind: "coach", key: c.coach_number, coach: c })
+    ),
+    { kind: "pantry", key: "pantry" },
+    { kind: "guard", key: "guard" },
+  ];
+  const trainRows: TrainItem[][] = [];
+  for (let i = 0; i < trainItems.length; i += ROW_SIZE) {
+    trainRows.push(trainItems.slice(i, i + ROW_SIZE));
+  }
+
   if (coaches.length === 0) {
     return (
       <div className="rounded-xl border border-white/10 bg-[#121713] p-12 text-center">
@@ -206,101 +227,166 @@ export function CoachLayout({
 
   return (
     <div className="space-y-4">
-      {/* ── Header: Pick your berth ── */}
-      <div className="rounded-xl border border-white/10 bg-[#121713] p-5">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-3">
-              <h3 className="text-foreground text-base font-semibold">
-                Pick your berth
-              </h3>
-              {aiSuggestion && (
-                <span className="border-accent-warm/30 bg-accent-warm/10 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs">
-                  <Sparkles className="text-accent-warm h-3 w-3" />
-                  <span className="text-foreground/70">AI suggests</span>
-                  <span className="text-accent-warm font-medium">
-                    {aiSuggestion.coach} · {aiSuggestion.berth} (
-                    {aiSuggestion.type})
-                  </span>
-                  <span className="text-foreground/40">· least swap risk</span>
-                </span>
-              )}
-            </div>
-            <p className="text-foreground/50 mt-2 text-xs">
-              Live availability · {routeLabel}
-              {dateLabel ? ` · ${dateLabel}` : ""} · {selectedBerths.size}{" "}
-              passenger{selectedBerths.size === 1 ? "" : "s"} selected
-            </p>
-          </div>
+      {/* ── 1. Full train view (rows joined by return-sweep arcs) ── */}
+      <div className="rounded-xl border border-white/10 bg-[#15161a] p-4">
+        <div className="flex flex-col">
+          {trainRows.map((row, ri) => (
+            <Fragment key={ri}>
+              <div className="flex items-center">
+                {row.map((item, ci) => (
+                  <Fragment key={item.key}>
+                    {/* coupler between cars */}
+                    {ci > 0 && (
+                      <span className="h-[3px] w-2.5 shrink-0 bg-white/15" />
+                    )}
 
-          <div className="flex items-center gap-2">
-            <span className="text-foreground/40 text-xs">Class:</span>
-            <div className="flex items-center gap-1.5">
-              {availableClasses.map((cls) => {
-                const active = cls === classFilter;
-                return (
-                  <button
-                    key={cls}
-                    onClick={() => handleClassChange(cls)}
-                    className={`flex h-9 w-11 cursor-pointer items-center justify-center rounded-full border text-xs font-medium transition-colors ${
-                      active
-                        ? "border-accent-warm/50 bg-accent-warm/10 text-accent-warm"
-                        : "text-foreground/60 border-white/10 bg-transparent hover:bg-white/5"
-                    }`}
-                  >
-                    {cls}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+                    {item.kind === "loco" && (
+                      <div className="bg-foreground/10 flex h-12 w-12 shrink-0 items-center justify-center rounded-md rounded-l-[20px]">
+                        <TrainIcon className="text-foreground/50 h-5 w-5" />
+                      </div>
+                    )}
+
+                    {item.kind === "coach" && item.coach && (
+                      <div
+                        className={`flex h-12 min-w-[52px] flex-1 items-center justify-center rounded-md border px-2 text-sm font-semibold ${
+                          coachStatusLabel(coachStats(item.coach)).tone ===
+                          "full"
+                            ? "text-foreground/30 border-white/10 bg-white/[0.02]"
+                            : "text-foreground border-white/15 bg-[#121713]"
+                        }`}
+                      >
+                        {item.coach.coach_number}
+                      </div>
+                    )}
+
+                    {(item.kind === "pantry" || item.kind === "guard") && (
+                      <div
+                        className={`text-foreground/35 flex h-12 flex-1 items-center justify-center rounded-md border border-dashed border-white/10 px-3 text-xs ${
+                          item.kind === "guard" ? "rounded-r-[20px]" : ""
+                        }`}
+                      >
+                        {item.kind === "pantry" ? "Pantry" : "Guard"}
+                      </div>
+                    )}
+                  </Fragment>
+                ))}
+              </div>
+
+              {/* return-sweep arc: right end of this row → left start of next */}
+              {ri < trainRows.length - 1 && (
+                <svg
+                  className="h-7 w-full text-white/25"
+                  viewBox="0 0 100 28"
+                  preserveAspectRatio="none"
+                  aria-hidden
+                >
+                  <path
+                    d="M 94 0 C 94 14 6 14 6 28"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    vectorEffect="non-scaling-stroke"
+                  />
+                </svg>
+              )}
+            </Fragment>
+          ))}
         </div>
       </div>
 
-      {/* ── Coach selector row ── */}
-      <div className="rounded-xl border border-white/10 bg-[#15161a] p-4">
-        <div className="flex items-stretch gap-3">
-          <div className="flex shrink-0 items-center gap-2 border-r border-white/10 pr-3">
-            <div className="bg-foreground/5 flex h-12 w-14 items-center justify-center rounded-md">
-              <TrainIcon className="text-foreground/40 h-5 w-5" />
-            </div>
-            <span className="text-foreground/40 text-[10px] tracking-wider uppercase">
-              Loco
+      {/* ── 2. Pick your berth — choose class + coach ── */}
+      <div className="rounded-xl border border-white/10 bg-[#121713] p-5">
+        <div className="flex flex-wrap items-center gap-3">
+          <h3 className="text-foreground text-base font-semibold">
+            Pick your berth
+          </h3>
+          {aiSuggestion && (
+            <span className="border-accent-warm/30 bg-accent-warm/10 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs">
+              <Sparkles className="text-accent-warm h-3 w-3" />
+              <span className="text-foreground/70">AI suggests</span>
+              <span className="text-accent-warm font-medium">
+                {aiSuggestion.coach} · {aiSuggestion.berth} ({aiSuggestion.type}
+                )
+              </span>
+              <span className="text-foreground/40 hidden sm:inline">
+                · least swap risk
+              </span>
             </span>
-          </div>
+          )}
+        </div>
+        <p className="text-foreground/50 mt-2 text-xs">
+          Live availability · {routeLabel}
+          {dateLabel ? ` · ${dateLabel}` : ""} · {selectedBerths.size} passenger
+          {selectedBerths.size === 1 ? "" : "s"} selected
+        </p>
 
-          <div className="flex flex-1 items-center gap-2 overflow-x-auto">
+        {/* Class */}
+        <div className="mt-5 flex flex-wrap items-center gap-2">
+          <span className="text-foreground/40 w-14 shrink-0 text-xs">
+            Class
+          </span>
+          <div className="flex flex-wrap items-center gap-1.5">
+            {availableClasses.map((cls) => {
+              const active = cls === classFilter;
+              return (
+                <button
+                  key={cls}
+                  onClick={() => handleClassChange(cls)}
+                  className={`flex h-9 w-11 cursor-pointer items-center justify-center rounded-full border text-xs font-medium transition-colors ${
+                    active
+                      ? "border-accent-warm/50 bg-accent-warm/10 text-accent-warm"
+                      : "text-foreground/60 border-white/10 bg-transparent hover:bg-white/5"
+                  }`}
+                >
+                  {cls}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Coach */}
+        <div className="mt-3 flex flex-wrap items-start gap-2">
+          <span className="text-foreground/40 mt-2.5 w-14 shrink-0 text-xs">
+            Coach
+          </span>
+          <div className="flex flex-1 flex-wrap items-center gap-2">
             {filteredCoaches.map((coach) => {
-              const stats = coachStats(coach);
-              const status = coachStatusLabel(stats);
               const active = coach.coach_number === selectedCoachNumber;
+              const status = coachStatusLabel(coachStats(coach));
+              const full = status.tone === "full";
               return (
                 <button
                   key={coach.coach_number}
                   onClick={() => handleCoachChange(coach.coach_number)}
-                  className={`flex h-14 min-w-[68px] shrink-0 cursor-pointer flex-col items-center justify-center rounded-lg border transition-colors ${
+                  disabled={full}
+                  className={`flex h-12 min-w-[64px] flex-col items-center justify-center rounded-lg border px-2 transition-colors ${
                     active
-                      ? "border-accent-warm bg-accent-warm/5"
-                      : status.tone === "full"
-                        ? "border-white/10 bg-white/[0.02] opacity-50"
-                        : "border-white/15 bg-[#121713] hover:border-white/30"
+                      ? "border-accent-warm bg-accent-warm/10"
+                      : full
+                        ? "cursor-not-allowed border-white/10 bg-white/[0.02]"
+                        : "cursor-pointer border-white/15 bg-[#15161a] hover:border-white/30"
                   }`}
                 >
                   <span
                     className={`text-sm font-semibold ${
-                      active ? "text-accent-warm" : "text-foreground"
+                      active
+                        ? "text-accent-warm"
+                        : full
+                          ? "text-foreground/30"
+                          : "text-foreground"
                     }`}
                   >
                     {coach.coach_number}
                   </span>
                   <span
-                    className={`mt-0.5 text-[10px] ${
-                      status.tone === "full"
-                        ? "text-red-400"
-                        : status.tone === "wl"
-                          ? "text-amber-400"
-                          : active
-                            ? "text-accent-warm/80"
+                    className={`text-[10px] ${
+                      active
+                        ? "text-accent-warm/80"
+                        : full
+                          ? "text-red-400"
+                          : status.tone === "wl"
+                            ? "text-amber-400"
                             : "text-emerald-400/80"
                     }`}
                   >
@@ -309,11 +395,6 @@ export function CoachLayout({
                 </button>
               );
             })}
-          </div>
-
-          <div className="flex shrink-0 items-center gap-2 border-l border-white/10 pl-3 text-xs">
-            <span className="text-foreground/40">→ Pantry</span>
-            <span className="text-foreground/40">→ Guard</span>
           </div>
         </div>
       </div>

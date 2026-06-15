@@ -48,20 +48,21 @@ export default function HelpPage() {
       {/* Full-page warm wash fading to dark — same gradient as the home page */}
       <div className="absolute inset-0 bg-[linear-gradient(180deg,#281506_0%,#1a1a18_45%)]" />
 
-      {/* Narrower centered column than the wide app shell, per Figma */}
-      <div className="app-container relative z-10 pb-16">
+      {/* Narrower centered column than the wide app shell, per Figma.
+          Extra bottom padding on mobile clears the fixed tab bar. */}
+      <div className="app-container relative z-10 pb-24 md:pb-16">
         <div className="mx-auto max-w-6xl">
           {/* ── Hero ── */}
           <section>
-            <div className="mx-auto max-w-2xl pt-16 pb-10 text-center sm:pt-20">
+            <div className="mx-auto max-w-2xl pt-10 pb-8 text-center sm:pt-16 sm:pb-10 lg:pt-20">
               <span className="border-accent-warm/30 text-accent-warm inline-flex items-center gap-2 rounded-full border bg-[#2a2318] px-4 py-1.5 text-sm">
                 <span className="bg-accent-warm h-2 w-2 rounded-full" />
                 Help Center
               </span>
-              <h1 className="font-heading text-foreground mt-6 text-6xl font-normal tracking-[-1px]">
+              <h1 className="font-heading text-foreground mt-6 text-4xl font-normal tracking-[-1px] sm:text-5xl lg:text-6xl">
                 How can we help?
               </h1>
-              <p className="text-muted-foreground mt-4 text-lg">
+              <p className="text-muted-foreground mt-4 text-base sm:text-lg">
                 Search our guides or browse by topic. Most answers are instant.
               </p>
 
@@ -95,10 +96,10 @@ export default function HelpPage() {
 
           {/* ── Browse by topic ── */}
           <section className="mt-6">
-            <h2 className="font-heading text-foreground text-2xl">
+            <h2 className="font-heading text-foreground text-xl sm:text-2xl">
               Browse by topic
             </h2>
-            <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="mt-5 grid grid-cols-3 gap-2.5 sm:gap-4">
               {FAQ_TOPICS.map((t) => {
                 const active = !q && t.key === category;
                 const Icon = t.icon;
@@ -111,7 +112,7 @@ export default function HelpPage() {
                       setCategory(t.key);
                     }}
                     className={cn(
-                      "flex cursor-pointer items-center gap-4 rounded-2xl border p-5 text-left transition-colors",
+                      "flex cursor-pointer flex-col items-start gap-2.5 rounded-2xl border p-3 text-left transition-colors sm:flex-row sm:items-center sm:gap-4 sm:p-5",
                       active
                         ? "border-[#E8AA4D]/60 bg-[#E8AA4D]/[0.07]"
                         : "bg-card/40 border-white/8 hover:border-white/15"
@@ -119,7 +120,7 @@ export default function HelpPage() {
                   >
                     <span
                       className={cn(
-                        "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl",
+                        "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl sm:h-11 sm:w-11",
                         active
                           ? "bg-[#E8AA4D] text-[#3d2817]"
                           : "bg-[#3d2817] text-[#E8AA4D]"
@@ -130,13 +131,13 @@ export default function HelpPage() {
                     <span className="min-w-0">
                       <span
                         className={cn(
-                          "block font-medium",
+                          "block text-sm leading-tight font-medium sm:text-base",
                           active ? "text-[#E8AA4D]" : "text-foreground"
                         )}
                       >
                         {t.label}
                       </span>
-                      <span className="text-muted-foreground mt-0.5 block text-sm">
+                      <span className="text-muted-foreground mt-0.5 hidden text-sm sm:block">
                         {t.blurb}
                       </span>
                     </span>
@@ -147,9 +148,9 @@ export default function HelpPage() {
           </section>
 
           {/* ── FAQ + sidebar ── */}
-          <div className="mt-12 grid grid-cols-1 gap-8 lg:grid-cols-[1fr_360px]">
+          <div className="mt-10 grid grid-cols-1 gap-8 lg:mt-12 lg:grid-cols-[1fr_360px]">
             <section>
-              <h2 className="font-heading text-foreground text-3xl">
+              <h2 className="font-heading text-foreground text-2xl sm:text-3xl">
                 {heading}
               </h2>
 

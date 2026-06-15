@@ -122,21 +122,21 @@ export default function ProfilePage() {
   return (
     <div className="app-container-narrow py-10">
       {/* ── HEADER ── */}
-      <header className="flex items-start justify-between gap-6">
-        <div className="flex items-center gap-6">
+      <header className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+        <div className="flex items-center gap-4 sm:gap-6">
           <ProfileAvatar src={photo} initials={initials} alt={fullName} />
 
-          <div>
-            <h1 className="font-heading text-foreground text-5xl font-normal tracking-[-0.5px]">
+          <div className="min-w-0">
+            <h1 className="font-heading text-foreground text-[22px] leading-[1.1] font-normal tracking-[-0.5px] break-words sm:text-4xl sm:leading-tight lg:text-5xl">
               {fullName}
             </h1>
-            <div className="text-muted-foreground mt-3 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
-              <span className="flex items-center gap-2">
-                <Mail className="h-4 w-4" />
-                {email || "—"}
+            <div className="text-muted-foreground mt-2 flex flex-col gap-1.5 text-sm sm:mt-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-6 sm:gap-y-2">
+              <span className="flex min-w-0 items-center gap-2">
+                <Mail className="h-4 w-4 shrink-0" />
+                <span className="truncate">{email || "—"}</span>
               </span>
               <span className="flex items-center gap-2">
-                <Phone className="h-4 w-4" />
+                <Phone className="h-4 w-4 shrink-0" />
                 {phone ? `+91 ${phone}` : "—"}
               </span>
               <span
@@ -145,14 +145,14 @@ export default function ProfilePage() {
                   emailVerified ? "text-emerald-400" : "text-amber-400"
                 )}
               >
-                <BadgeCheck className="h-4 w-4" />
+                <BadgeCheck className="h-4 w-4 shrink-0" />
                 {emailVerified ? "Email verified" : "Email not verified"}
               </span>
             </div>
           </div>
         </div>
 
-        <div>
+        <div className="shrink-0">
           <input
             ref={fileRef}
             type="file"
@@ -164,7 +164,7 @@ export default function ProfilePage() {
             variant="outline"
             onClick={() => fileRef.current?.click()}
             disabled={upload.isPending}
-            className="cusror-pointer rounded-full border-white/15 bg-transparent px-5 text-sm font-medium text-white/90 hover:bg-white/[0.04]"
+            className="w-full cursor-pointer rounded-full border-white/15 bg-transparent px-5 text-sm font-medium text-white/90 hover:bg-white/[0.04] sm:w-auto"
           >
             {upload.isPending ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -174,7 +174,7 @@ export default function ProfilePage() {
             {upload.isPending ? "Uploading…" : "Update photo"}
           </Button>
           {(photoError || upload.isError) && (
-            <p className="mt-2 text-right text-xs text-red-400">
+            <p className="mt-2 text-left text-xs text-red-400 sm:text-right">
               {photoError ?? toApiError(upload.error).message}
             </p>
           )}
@@ -187,25 +187,29 @@ export default function ProfilePage() {
         onValueChange={(v) => setTab(v as TabId)}
         className="mt-8 gap-0"
       >
-        <TabsList
-          variant="line"
-          className="h-auto w-full justify-start gap-1 rounded-none border-b border-white/10 p-0"
-        >
-          {TABS.map((t) => (
-            <TabsTrigger
-              key={t.id}
-              value={t.id}
-              className="text-muted-foreground data-active:text-foreground flex-none gap-2 px-4 py-3 after:-bottom-px after:bg-[#E8AA4D] data-active:font-medium"
-            >
-              {t.label}
-              {t.badge && (
-                <Badge className="h-5 bg-[#3d2817] px-2 text-[10px] font-semibold tracking-wide text-[#E8AA4D]">
-                  {t.badge}
-                </Badge>
-              )}
-            </TabsTrigger>
-          ))}
-        </TabsList>
+        {/* Scrolls horizontally on narrow screens instead of overflowing the
+            page; -mb-px keeps the active underline sitting on the border. */}
+        <div className="overflow-x-auto border-b border-white/10 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <TabsList
+            variant="line"
+            className="-mb-px h-auto w-max justify-start gap-1 rounded-none border-0 p-0"
+          >
+            {TABS.map((t) => (
+              <TabsTrigger
+                key={t.id}
+                value={t.id}
+                className="text-muted-foreground data-active:text-foreground flex-none gap-2 px-4 py-3 after:-bottom-px after:bg-[#E8AA4D] data-active:font-medium"
+              >
+                {t.label}
+                {t.badge && (
+                  <Badge className="h-5 bg-[#3d2817] px-2 text-[10px] font-semibold tracking-wide text-[#E8AA4D]">
+                    {t.badge}
+                  </Badge>
+                )}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </div>
 
         <TabsContent value="personal" className="mt-8">
           <PersonalTab />
@@ -739,16 +743,16 @@ function KycTab() {
       {/* Verification status */}
       <SectionCard title="Verification status">
         {isLoading ? (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="grid grid-cols-3 gap-3 sm:gap-4">
             {Array.from({ length: 3 }).map((_, i) => (
               <div
                 key={i}
-                className="h-24 animate-pulse rounded-xl bg-white/5"
+                className="h-28 animate-pulse rounded-xl bg-white/5"
               />
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="grid grid-cols-3 gap-3 sm:gap-4">
             <StatusTile
               state={pan ? "complete" : "pending"}
               label="PAN card"
@@ -870,7 +874,7 @@ function StatusTile({
   return (
     <div
       className={cn(
-        "rounded-xl border p-5",
+        "rounded-xl border p-3 sm:p-5",
         complete
           ? "border-emerald-500/20 bg-emerald-500/10"
           : "border-white/8 bg-white/[0.02]"
@@ -878,7 +882,7 @@ function StatusTile({
     >
       <div
         className={cn(
-          "flex h-8 w-8 items-center justify-center rounded-full",
+          "flex size-8 items-center justify-center rounded-full",
           complete ? "bg-emerald-500 text-white" : "bg-white/10 text-white/60"
         )}
       >
@@ -888,10 +892,12 @@ function StatusTile({
           <Clock className="h-4 w-4" />
         )}
       </div>
-      <p className="text-foreground mt-3 text-[15px] font-medium">{label}</p>
+      <p className="text-foreground mt-2.5 text-[13px] leading-tight font-medium sm:mt-3 sm:text-[15px]">
+        {label}
+      </p>
       <p
         className={cn(
-          "mt-0.5 text-sm",
+          "mt-1 text-xs sm:text-sm",
           complete ? "text-emerald-300/80" : "text-muted-foreground"
         )}
       >
@@ -951,47 +957,53 @@ function NotificationsTab() {
   return (
     <div className="space-y-6">
       <Card className="bg-card/40 border-white/8 shadow-none">
-        <CardContent className="p-8 pt-6">
-          {/* Header row */}
-          <div className="grid grid-cols-[1fr_repeat(4,72px)] items-center gap-4 border-b border-white/8 pb-4">
-            <span className="text-muted-foreground text-xs font-medium tracking-[0.12em] uppercase">
-              Notify me about
-            </span>
-            {NOTIFY_CHANNELS.map((c) => (
-              <span
-                key={c}
-                className="text-muted-foreground text-center text-sm"
-              >
-                {c}
-              </span>
-            ))}
-          </div>
+        <CardContent className="p-5 sm:p-8 sm:pt-6">
+          {/* The channel matrix needs a minimum width to stay readable, so it
+              scrolls sideways on phones rather than squashing the toggles. */}
+          <div className="-mx-5 overflow-x-auto px-5 [-ms-overflow-style:none] [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden">
+            <div className="min-w-[460px]">
+              {/* Header row */}
+              <div className="grid grid-cols-[1fr_repeat(4,64px)] items-center gap-4 border-b border-white/8 pb-4">
+                <span className="text-muted-foreground text-xs font-medium tracking-[0.12em] uppercase">
+                  Notify me about
+                </span>
+                {NOTIFY_CHANNELS.map((c) => (
+                  <span
+                    key={c}
+                    className="text-muted-foreground text-center text-sm"
+                  >
+                    {c}
+                  </span>
+                ))}
+              </div>
 
-          {/* Rows */}
-          <div className="divide-y divide-white/8">
-            {NOTIFY_ROWS.map((r, ri) => (
-              <div
-                key={r.title}
-                className="grid grid-cols-[1fr_repeat(4,72px)] items-center gap-4 py-5"
-              >
-                <div>
-                  <p className="text-foreground text-[15px] font-medium">
-                    {r.title}
-                  </p>
-                  <p className="text-muted-foreground mt-0.5 text-sm">
-                    {r.subtitle}
-                  </p>
-                </div>
-                {r.channels.map((_, ci) => (
-                  <div key={ci} className="flex justify-center">
-                    <Switch
-                      checked={matrix[ri][ci]}
-                      onCheckedChange={() => toggleCell(ri, ci)}
-                    />
+              {/* Rows */}
+              <div className="divide-y divide-white/8">
+                {NOTIFY_ROWS.map((r, ri) => (
+                  <div
+                    key={r.title}
+                    className="grid grid-cols-[1fr_repeat(4,64px)] items-center gap-4 py-5"
+                  >
+                    <div>
+                      <p className="text-foreground text-[15px] font-medium">
+                        {r.title}
+                      </p>
+                      <p className="text-muted-foreground mt-0.5 text-sm">
+                        {r.subtitle}
+                      </p>
+                    </div>
+                    {r.channels.map((_, ci) => (
+                      <div key={ci} className="flex justify-center">
+                        <Switch
+                          checked={matrix[ri][ci]}
+                          onCheckedChange={() => toggleCell(ri, ci)}
+                        />
+                      </div>
+                    ))}
                   </div>
                 ))}
               </div>
-            ))}
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -1057,9 +1069,9 @@ function SectionCard({
 }) {
   return (
     <Card className="bg-card/40 border-white/8 shadow-none">
-      <CardContent className="p-8">
-        <div className="mb-7 flex items-center justify-between">
-          <h2 className="font-heading text-foreground text-xl font-medium">
+      <CardContent className="p-5 sm:p-8">
+        <div className="mb-5 flex items-center justify-between gap-3 sm:mb-7">
+          <h2 className="font-heading text-foreground text-lg font-medium sm:text-xl">
             {title}
           </h2>
           {action}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { usePnrStatus } from "@/hooks/usePnrStatus";
 import { format, parseISO } from "date-fns";
 import {
@@ -118,37 +118,39 @@ export default function PnrStatusPage() {
           <p className="text-foreground/40 text-xs font-medium tracking-wider uppercase">
             PNR Number
           </p>
-          <div className="mt-2 flex items-center gap-4">
-            <h1 className="text-foreground font-mono text-4xl font-medium">
+          <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+            <h1 className="text-foreground font-mono text-3xl font-medium break-all sm:text-4xl sm:break-normal">
               {data.pnr_number}
             </h1>
-            <span
-              className={`rounded-md px-3 py-1 text-xs font-medium uppercase ${
-                statusBadge[data.booking_status] ??
-                "bg-gray-500/20 text-gray-400"
-              }`}
-            >
-              {data.booking_status}
-            </span>
-            <button
-              onClick={handleCopy}
-              className="text-foreground flex cursor-pointer items-center gap-1.5 rounded-lg border border-white/15 px-3 py-1.5 text-sm hover:bg-white/5"
-            >
-              <Copy className="h-3.5 w-3.5" />
-              Copy
-            </button>
-            <button
-              onClick={handleRecheck}
-              disabled={isRefetching}
-              className="text-foreground flex cursor-pointer items-center gap-1.5 rounded-lg border border-white/15 px-3 py-1.5 text-sm hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {isRefetching ? (
-                <Spinner className="size-3.5" />
-              ) : (
-                <RefreshCw className="h-3.5 w-3.5" />
-              )}
-              {isRefetching ? "Re-checking…" : "Re-check"}
-            </button>
+            <div className="flex flex-wrap items-center gap-3">
+              <span
+                className={`rounded-md px-3 py-1 text-xs font-medium uppercase ${
+                  statusBadge[data.booking_status] ??
+                  "bg-gray-500/20 text-gray-400"
+                }`}
+              >
+                {data.booking_status}
+              </span>
+              <button
+                onClick={handleCopy}
+                className="text-foreground flex cursor-pointer items-center gap-1.5 rounded-lg border border-white/15 px-3 py-1.5 text-sm hover:bg-white/5"
+              >
+                <Copy className="h-3.5 w-3.5" />
+                Copy
+              </button>
+              <button
+                onClick={handleRecheck}
+                disabled={isRefetching}
+                className="text-foreground flex cursor-pointer items-center gap-1.5 rounded-lg border border-white/15 px-3 py-1.5 text-sm hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isRefetching ? (
+                  <Spinner className="size-3.5" />
+                ) : (
+                  <RefreshCw className="h-3.5 w-3.5" />
+                )}
+                {isRefetching ? "Re-checking…" : "Re-check"}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -210,70 +212,122 @@ export default function PnrStatusPage() {
           </div>
         </div>
 
-        {/* ── Passenger Table ── */}
+        {/* ── Passengers ── */}
         <div className="mt-6 overflow-hidden rounded-xl border border-white/10 bg-[#121713]">
-          <Table>
-            <TableHeader>
-              <TableRow className="border-white/5 bg-white/[0.02] hover:bg-white/[0.02]">
-                <TableHead className="text-foreground/40 w-10 px-6 py-3 text-xs font-medium tracking-wider uppercase">
-                  #
-                </TableHead>
-                <TableHead className="text-foreground/40 px-2 py-3 text-xs font-medium tracking-wider uppercase">
-                  Passenger
-                </TableHead>
-                <TableHead className="text-foreground/40 w-36 px-2 py-3 text-xs font-medium tracking-wider uppercase">
-                  Booking Status
-                </TableHead>
-                <TableHead className="text-foreground/40 w-36 px-2 py-3 text-center text-xs font-medium tracking-wider uppercase">
-                  Current Status
-                </TableHead>
-                <TableHead className="text-foreground/40 w-36 px-2 py-3 text-xs font-medium tracking-wider uppercase">
-                  Coach / Berth
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.passengers.map((p, idx) => (
-                <TableRow
-                  key={idx}
-                  className="border-white/5 hover:bg-white/[0.02]"
-                >
-                  <TableCell className="text-foreground/40 px-6 py-4 text-sm">
-                    {idx + 1}
-                  </TableCell>
-                  <TableCell className="px-2 py-4">
+          {/* Mobile: stacked cards */}
+          <div className="divide-y divide-white/5 sm:hidden">
+            {data.passengers.map((p, idx) => (
+              <div key={idx} className="px-5 py-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
                     <p className="text-foreground text-sm font-medium">
-                      {p.passenger_name}
+                      {idx + 1}. {p.passenger_name}
                     </p>
                     <p className="text-foreground/40 text-xs">
                       {p.passenger_age}
                       {p.passenger_gender?.charAt(0).toUpperCase()}
                     </p>
-                  </TableCell>
-                  <TableCell className="text-foreground/60 px-2 py-4 text-sm">
-                    {p.passenger_status}/{p.seat_number} ({data.wl_type})
-                  </TableCell>
-                  <TableCell className="px-2 py-4 text-center">
-                    <span
-                      className={`inline-flex items-center rounded-md px-2.5 py-0.5 text-xs font-medium ${
-                        statusBadge[p.passenger_status] ??
-                        "bg-gray-500/20 text-gray-400"
-                      }`}
-                    >
-                      {passengerStatusLabel[p.passenger_status] ??
-                        p.passenger_status}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-foreground/60 px-2 py-4 text-sm">
-                    {p.passenger_status === "CAN" ||
-                    p.passenger_status === "CANCELLED"
-                      ? "—"
-                      : `${p.coach_number} / ${p.berth_type}-${p.seat_number}`}
-                  </TableCell>
+                  </div>
+                  <span
+                    className={`inline-flex shrink-0 items-center rounded-md px-2.5 py-0.5 text-xs font-medium ${
+                      statusBadge[p.passenger_status] ??
+                      "bg-gray-500/20 text-gray-400"
+                    }`}
+                  >
+                    {passengerStatusLabel[p.passenger_status] ??
+                      p.passenger_status}
+                  </span>
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-3">
+                  <div>
+                    <p className="text-foreground/40 text-[11px] font-medium tracking-wider uppercase">
+                      Booking
+                    </p>
+                    <p className="text-foreground/70 mt-1 text-sm">
+                      {p.passenger_status}/{p.seat_number} ({data.wl_type})
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-foreground/40 text-[11px] font-medium tracking-wider uppercase">
+                      Coach / Berth
+                    </p>
+                    <p className="text-foreground/70 mt-1 text-sm">
+                      {p.passenger_status === "CAN" ||
+                      p.passenger_status === "CANCELLED"
+                        ? "—"
+                        : `${p.coach_number} / ${p.berth_type}-${p.seat_number}`}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop: table */}
+          <div className="hidden sm:block">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-white/5 bg-white/[0.02] hover:bg-white/[0.02]">
+                  <TableHead className="text-foreground/40 w-10 px-6 py-3 text-xs font-medium tracking-wider uppercase">
+                    #
+                  </TableHead>
+                  <TableHead className="text-foreground/40 px-2 py-3 text-xs font-medium tracking-wider uppercase">
+                    Passenger
+                  </TableHead>
+                  <TableHead className="text-foreground/40 w-36 px-2 py-3 text-xs font-medium tracking-wider uppercase">
+                    Booking Status
+                  </TableHead>
+                  <TableHead className="text-foreground/40 w-36 px-2 py-3 text-center text-xs font-medium tracking-wider uppercase">
+                    Current Status
+                  </TableHead>
+                  <TableHead className="text-foreground/40 w-36 px-2 py-3 text-xs font-medium tracking-wider uppercase">
+                    Coach / Berth
+                  </TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {data.passengers.map((p, idx) => (
+                  <TableRow
+                    key={idx}
+                    className="border-white/5 hover:bg-white/[0.02]"
+                  >
+                    <TableCell className="text-foreground/40 px-6 py-4 text-sm">
+                      {idx + 1}
+                    </TableCell>
+                    <TableCell className="px-2 py-4">
+                      <p className="text-foreground text-sm font-medium">
+                        {p.passenger_name}
+                      </p>
+                      <p className="text-foreground/40 text-xs">
+                        {p.passenger_age}
+                        {p.passenger_gender?.charAt(0).toUpperCase()}
+                      </p>
+                    </TableCell>
+                    <TableCell className="text-foreground/60 px-2 py-4 text-sm">
+                      {p.passenger_status}/{p.seat_number} ({data.wl_type})
+                    </TableCell>
+                    <TableCell className="px-2 py-4 text-center">
+                      <span
+                        className={`inline-flex items-center rounded-md px-2.5 py-0.5 text-xs font-medium ${
+                          statusBadge[p.passenger_status] ??
+                          "bg-gray-500/20 text-gray-400"
+                        }`}
+                      >
+                        {passengerStatusLabel[p.passenger_status] ??
+                          p.passenger_status}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-foreground/60 px-2 py-4 text-sm">
+                      {p.passenger_status === "CAN" ||
+                      p.passenger_status === "CANCELLED"
+                        ? "—"
+                        : `${p.coach_number} / ${p.berth_type}-${p.seat_number}`}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </div>
 
         {/* ── Class & Quota + Chart Status ── */}

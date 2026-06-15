@@ -280,7 +280,7 @@ export default function TrainDetailPage() {
                   <span
                     className={`rounded-md px-2.5 py-0.5 text-xs font-medium capitalize ${badgeClass}`}
                   >
-                    {schedule.train_type} Express
+                    {schedule.train_type}
                   </span>
                   <span className="text-foreground/30">·</span>
                   <span className="text-foreground/50">
@@ -299,7 +299,7 @@ export default function TrainDetailPage() {
                   )}
                 </div>
 
-                <h1 className="text-foreground mt-4 text-[42px] leading-[1.1] font-normal tracking-[-0.5px]">
+                <h1 className="text-foreground mt-4 text-3xl leading-[1.1] font-normal tracking-[-0.5px] sm:text-[42px]">
                   {schedule.train_name}
                 </h1>
 
@@ -323,7 +323,7 @@ export default function TrainDetailPage() {
                   </p>
                 )}
 
-                <div className="mt-5 flex items-center gap-3">
+                <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-2">
                   <div className="flex items-center gap-1.5">
                     {DAY_KEYS.map((key, idx) => {
                       const active = isDayActive(key, schedule.runs_on_days);
@@ -351,7 +351,7 @@ export default function TrainDetailPage() {
               </div>
 
               {/* Right side — context chip */}
-              <div className="flex flex-col items-end gap-3">
+              <div className="flex shrink-0 flex-col gap-3 sm:items-end">
                 {seatData?.availability_status === "AVL" && (
                   <span className="border-accent-warm/30 bg-accent-warm/10 text-accent-warm inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium">
                     <span className="bg-accent-warm h-1.5 w-1.5 rounded-full" />
@@ -359,7 +359,7 @@ export default function TrainDetailPage() {
                   </span>
                 )}
                 {(cls || quota || dateLabel) && (
-                  <div className="text-foreground/50 text-right text-xs">
+                  <div className="text-foreground/50 text-left text-xs sm:text-right">
                     <p className="text-foreground/40 tracking-wider uppercase">
                       For
                     </p>
@@ -374,8 +374,8 @@ export default function TrainDetailPage() {
           </div>
         </section>
 
-        {/* ── Two-column layout ── */}
-        <div className="mt-6 flex gap-6">
+        {/* ── Two-column layout (stacks on mobile) ── */}
+        <div className="mt-6 flex flex-col gap-6 lg:flex-row">
           {/* Left — Tabs + content */}
           <div className="min-w-0 flex-1">
             {/* Tabs */}
@@ -426,8 +426,8 @@ export default function TrainDetailPage() {
           </div>
 
           {/* Right — Booking sidebar */}
-          <aside className="w-[320px] shrink-0">
-            <div className="sticky top-6 rounded-xl border border-white/10 bg-[#121713] p-5">
+          <aside className="order-first w-full lg:order-none lg:w-[320px] lg:shrink-0">
+            <div className="rounded-xl border border-white/10 bg-[#121713] p-5 lg:sticky lg:top-6">
               <h3 className="text-foreground text-base font-medium">
                 Book this train
               </h3>

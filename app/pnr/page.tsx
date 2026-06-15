@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Search } from "lucide-react";
 
 // Status badge colors
 const statusBadge: Record<string, string> = {
@@ -67,7 +66,7 @@ export default function PnrPage() {
           </span>
 
           {/* Heading */}
-          <h1 className="text-foreground mt-6 text-[48px] leading-[1.05] font-normal tracking-[-1px]">
+          <h1 className="text-foreground mt-6 text-[32px] leading-[1.1] font-normal tracking-[-0.5px] sm:text-[40px] sm:tracking-[-1px] lg:text-[48px] lg:leading-[1.05]">
             Check your PNR status
           </h1>
 
@@ -78,7 +77,7 @@ export default function PnrPage() {
           </p>
 
           {/* Input + Button */}
-          <div className="mt-10 flex items-center gap-3">
+          <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center">
             <input
               type="text"
               inputMode="numeric"
@@ -95,7 +94,7 @@ export default function PnrPage() {
             <button
               onClick={handleCheck}
               disabled={pnr.length !== 10}
-              className="bg-accent-warm cursor-pointer rounded-xl px-8 py-4 text-sm font-medium text-white hover:opacity-90 disabled:opacity-40"
+              className="bg-accent-warm w-full cursor-pointer rounded-xl px-8 py-4 text-sm font-medium whitespace-nowrap text-white hover:opacity-90 disabled:opacity-40 sm:w-auto"
             >
               Check Status
             </button>
@@ -115,23 +114,23 @@ export default function PnrPage() {
       <div className="mx-auto max-w-[700px] px-6 py-16">
         <h2 className="text-foreground mb-6 text-2xl">Recently checked</h2>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {recentPnrs.map((item) => (
             <button
               key={item.pnr}
               onClick={() => router.push(`/pnr/${item.pnr}`)}
-              className="flex cursor-pointer items-center justify-between rounded-xl border border-white/10 bg-[#121713] px-5 py-4 text-left hover:border-white/20"
+              className="flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-white/10 bg-[#121713] px-5 py-4 text-left hover:border-white/20"
             >
-              <div>
+              <div className="min-w-0">
                 <p className="text-foreground font-mono text-base font-medium">
                   {item.pnr}
                 </p>
-                <p className="text-foreground/40 mt-0.5 text-sm">
+                <p className="text-foreground/40 mt-0.5 truncate text-sm">
                   {item.train} · {item.date}
                 </p>
               </div>
               <span
-                className={`rounded-md px-3 py-1 text-xs font-medium ${statusBadge[item.status]}`}
+                className={`shrink-0 rounded-md px-3 py-1 text-xs font-medium ${statusBadge[item.status]}`}
               >
                 {item.status}
               </span>
