@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Pencil, Plus, X } from "lucide-react";
+import { Pencil, Plus } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import {
@@ -41,19 +41,20 @@ export default function PassengersPage() {
     <div className="app-container-narrow py-10">
       {/* Header */}
       <header className="flex items-start justify-between gap-6">
-        <div>
-          <h1 className="font-heading text-foreground text-5xl font-normal tracking-[-0.5px]">
+        <div className="min-w-0">
+          <h1 className="font-heading text-foreground text-3xl font-normal tracking-[-0.5px] sm:text-4xl lg:text-5xl">
             Saved passengers
           </h1>
-          <p className="text-muted-foreground mt-3 text-sm">
-            {passengers.length} saved · Auto-fills during booking. ID is stored
-            encrypted, masked everywhere.
+          <p className="text-muted-foreground mt-2 text-sm sm:mt-3">
+            {passengers.length} saved · Auto-fills during booking. ID is masked
+            everywhere.
           </p>
         </div>
 
+        {/* Desktop: header button. Mobile uses the pinned bottom button. */}
         <Button
           onClick={openAdd}
-          className="rounded-full bg-[#E8AA4D] px-5 font-medium text-[#3d2817] hover:bg-[#D09840]"
+          className="hidden shrink-0 rounded-full bg-[#E8AA4D] px-5 font-medium text-[#3d2817] hover:bg-[#D09840] md:inline-flex"
         >
           <Plus className="h-4 w-4" />
           Add passenger
@@ -83,13 +84,23 @@ export default function PassengersPage() {
           <button
             type="button"
             onClick={openAdd}
-            className="text-muted-foreground hover:text-foreground bg-card/20 hover:bg-card/40 flex min-h-[132px] cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-white/12 text-sm transition-colors hover:border-white/20"
+            className="text-muted-foreground hover:text-foreground bg-card/20 hover:bg-card/40 hidden min-h-[132px] cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-white/12 text-sm transition-colors hover:border-white/20 md:flex"
           >
             <Plus className="h-4 w-4" />
             Add new passenger
           </button>
         </div>
       )}
+
+      {/* Mobile: Add button sits in flow below the list, so it moves down as
+          more passengers are added. Desktop uses the header button. */}
+      <Button
+        onClick={openAdd}
+        className="mt-4 h-12 w-full rounded-xl bg-[#E8AA4D] text-base font-medium text-[#3d2817] hover:bg-[#D09840] md:hidden"
+      >
+        <Plus className="h-5 w-5" />
+        Add passenger
+      </Button>
 
       <PassengerDialog
         open={dialogOpen}
@@ -112,7 +123,7 @@ function PassengerCard({
   return (
     <div
       className={cn(
-        "flex gap-4 rounded-2xl border border-white/8 p-5",
+        "flex items-start gap-4 rounded-2xl border border-white/8 p-5",
         p.is_primary ? "bg-[#E8AA4D]/[0.06]" : "bg-card/40"
       )}
     >
@@ -139,24 +150,15 @@ function PassengerCard({
         </p>
       </div>
 
-      <div className="flex flex-col items-end justify-between">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onEdit}
-          aria-label={`Edit ${p.full_name}`}
-          className="text-muted-foreground hover:text-foreground size-8"
-        >
-          <Pencil className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="text-muted-foreground size-8 hover:text-red-400"
-        >
-          <X className="h-4 w-4" />
-        </Button>
-      </div>
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={onEdit}
+        aria-label={`Edit ${p.full_name}`}
+        className="text-muted-foreground hover:text-foreground size-8 shrink-0"
+      >
+        <Pencil className="h-4 w-4" />
+      </Button>
     </div>
   );
 }

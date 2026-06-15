@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { inr } from "@/lib/fare";
+import { inr, type FarePreview } from "@/lib/fare";
 import { toApiError } from "@/lib/api";
 import { bookingStatusMeta, type BookingDetail } from "@/lib/bookings";
 import type { PnrPassenger, PnrStatus } from "@/lib/pnr";
@@ -23,6 +23,7 @@ import type { Receipt } from "@/lib/receipt";
 import { useBooking } from "@/hooks/useBooking";
 import { usePnrStatus } from "@/hooks/usePnrStatus";
 import { useReceipt } from "@/hooks/useReceipt";
+import { useFarePreview } from "@/hooks/useFarePreview";
 import { useDownloadTicket } from "@/hooks/useDownloadTicket";
 import { useCancelBooking } from "@/hooks/useCancelBooking";
 import { ReceiptDialog } from "@/components/booking/receipt-dialog";
@@ -62,6 +63,24 @@ export default function BookingDetailPage() {
   const receipt = useReceipt(id, isPaid);
   const downloadTicket = useDownloadTicket();
   const cancelBooking = useCancelBooking();
+
+  // Paid bookings have a receipt with the real line items. Unpaid ones don't,
+  // so pull the component split (base fare + charges + taxes) from the fare
+  // engine — otherwise the "Fare breakdown" card would just echo the total.
+  const passengerCount = pnrStatus.data?.passengers.length ?? 0;
+  const farePreview = useFarePreview(
+    {
+      train_number: pnrStatus.data?.train_number ?? "",
+      from_station: booking.data?.source_station_code ?? "",
+      to_station: booking.data?.destination_station_code ?? "",
+      train_class: booking.data?.train_class ?? "",
+      quota: booking.data?.quota ?? "",
+      journey_date: booking.data?.journey_date ?? "",
+      passenger_count: passengerCount || 1,
+      train_type: pnrStatus.data?.train_type ?? "",
+    },
+    !isPaid && !isCancelled && passengerCount > 0 && !!booking.data
+  );
 
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
@@ -114,6 +133,8 @@ export default function BookingDetailPage() {
             />
             <FareCard
               receipt={receipt.data}
+              farePreview={farePreview.data}
+              loading={farePreview.isFetching}
               totalFare={booking.data.total_fare}
             />
           </div>
@@ -313,60 +334,105 @@ function PassengerTable({
   if (!passengers || passengers.length === 0) return null;
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="text-muted-foreground border-b border-white/10 text-[11px] tracking-[0.1em] uppercase">
-            <th className="w-8 py-2 text-left font-medium">#</th>
-            <th className="py-2 text-left font-medium">Passenger</th>
-            <th className="py-2 text-left font-medium">Status</th>
-            <th className="py-2 text-left font-medium">Seat / Berth</th>
-            <th className="py-2 text-right font-medium">Fare</th>
-          </tr>
-        </thead>
-        <tbody>
-          {passengers.map((p, i) => (
-            <tr key={i} className="border-b border-white/8">
-              <td className="text-muted-foreground py-3 tabular-nums">
-                {i + 1}
-              </td>
-              <td className="text-foreground py-3 pr-4 font-medium">
+    <>
+      {/* Mobile: stacked cards — a 5-column table can't fit a phone width, so
+          the headers collide. */}
+      <div className="divide-y divide-white/8 sm:hidden">
+        {passengers.map((p, i) => (
+          <div key={i} className="py-3.5 first:pt-0 last:pb-0">
+            <div className="flex items-start justify-between gap-3">
+              <p className="text-foreground min-w-0 text-sm font-medium">
+                <span className="text-muted-foreground font-normal">
+                  {i + 1}.{" "}
+                </span>
                 {titleCase(p.passenger_name)}
                 <span className="text-muted-foreground font-normal">
                   {" · "}
                   {p.passenger_age}
                   {genderInitial(p.passenger_gender)}
                 </span>
-              </td>
-              <td className="py-3">
-                <span
-                  className={cn(
-                    "rounded-md px-2 py-0.5 text-[11px] font-medium",
-                    paxStatusClass(p.passenger_status)
-                  )}
-                >
-                  {p.passenger_status}
-                </span>
-              </td>
-              <td className="text-foreground py-3 tabular-nums">
+              </p>
+              <span
+                className={cn(
+                  "shrink-0 rounded-md px-2 py-0.5 text-[11px] font-medium",
+                  paxStatusClass(p.passenger_status)
+                )}
+              >
+                {p.passenger_status}
+              </span>
+            </div>
+            <div className="mt-2 flex items-center justify-between gap-3 text-sm">
+              <span className="text-muted-foreground tabular-nums">
                 {p.coach_number} · {p.seat_number} ({p.berth_type})
-              </td>
-              <td className="text-foreground py-3 text-right tabular-nums">
+              </span>
+              <span className="text-foreground tabular-nums">
                 {inr(p.fare)}
-              </td>
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop: table */}
+      <div className="hidden overflow-x-auto sm:block">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-muted-foreground border-b border-white/10 text-[11px] tracking-[0.1em] uppercase">
+              <th className="w-8 py-2 text-left font-medium">#</th>
+              <th className="py-2 text-left font-medium">Passenger</th>
+              <th className="py-2 text-left font-medium">Status</th>
+              <th className="py-2 text-left font-medium">Seat / Berth</th>
+              <th className="py-2 text-right font-medium">Fare</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody>
+            {passengers.map((p, i) => (
+              <tr key={i} className="border-b border-white/8">
+                <td className="text-muted-foreground py-3 tabular-nums">
+                  {i + 1}
+                </td>
+                <td className="text-foreground py-3 pr-4 font-medium">
+                  {titleCase(p.passenger_name)}
+                  <span className="text-muted-foreground font-normal">
+                    {" · "}
+                    {p.passenger_age}
+                    {genderInitial(p.passenger_gender)}
+                  </span>
+                </td>
+                <td className="py-3">
+                  <span
+                    className={cn(
+                      "rounded-md px-2 py-0.5 text-[11px] font-medium",
+                      paxStatusClass(p.passenger_status)
+                    )}
+                  >
+                    {p.passenger_status}
+                  </span>
+                </td>
+                <td className="text-foreground py-3 tabular-nums">
+                  {p.coach_number} · {p.seat_number} ({p.berth_type})
+                </td>
+                <td className="text-foreground py-3 text-right tabular-nums">
+                  {inr(p.fare)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }
 
 function FareCard({
   receipt,
+  farePreview,
+  loading,
   totalFare,
 }: {
   receipt?: Receipt;
+  farePreview?: FarePreview;
+  loading?: boolean;
   totalFare: string;
 }) {
   return (
@@ -376,6 +442,7 @@ function FareCard({
           Fare breakdown
         </h2>
         {receipt ? (
+          // Paid — real receipt line items.
           <dl className="mt-4 space-y-2.5">
             {receipt.line_items.map((item, i) => (
               <div
@@ -396,23 +463,79 @@ function FareCard({
                 </dd>
               </div>
             ))}
-            <div className="mt-2 flex items-center justify-between gap-4 border-t border-white/10 pt-3">
-              <dt className="text-foreground font-medium">Total paid</dt>
-              <dd className="font-heading text-foreground text-lg tabular-nums">
-                {inr(receipt.total_paid)}
-              </dd>
-            </div>
+            <FareTotal label="Total paid" value={inr(receipt.total_paid)} />
           </dl>
-        ) : (
-          <div className="mt-4 flex items-center justify-between gap-4 border-t border-white/10 pt-3">
-            <span className="text-foreground font-medium">Total fare</span>
-            <span className="font-heading text-foreground text-lg tabular-nums">
-              {fareLabel(totalFare)}
-            </span>
+        ) : farePreview ? (
+          // Unpaid — component split from the fare engine.
+          <dl className="mt-4 space-y-2.5">
+            <FareRow
+              label={
+                farePreview.passenger_count > 1
+                  ? `Base fare (${farePreview.passenger_count} pax)`
+                  : "Base fare"
+              }
+              value={farePreview.base_fare}
+            />
+            {farePreview.reservation_charge > 0 && (
+              <FareRow
+                label="Reservation charge"
+                value={farePreview.reservation_charge}
+              />
+            )}
+            {farePreview.superfast_charge > 0 && (
+              <FareRow
+                label="Superfast charge"
+                value={farePreview.superfast_charge}
+              />
+            )}
+            {farePreview.tatkal_charge > 0 && (
+              <FareRow
+                label="Tatkal charge"
+                value={farePreview.tatkal_charge}
+              />
+            )}
+            {farePreview.gst > 0 && (
+              <FareRow label="GST" value={farePreview.gst} />
+            )}
+            {farePreview.irctc_charge > 0 && (
+              <FareRow
+                label="Convenience fee"
+                value={farePreview.irctc_charge}
+              />
+            )}
+            <FareTotal label="Total fare" value={inr(farePreview.total_fare)} />
+          </dl>
+        ) : loading ? (
+          <div className="mt-4 space-y-2.5">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="bg-card/60 h-5 animate-pulse rounded" />
+            ))}
           </div>
+        ) : (
+          <FareTotal label="Total fare" value={fareLabel(totalFare)} />
         )}
       </CardContent>
     </Card>
+  );
+}
+
+function FareRow({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="flex items-center justify-between gap-4 text-sm">
+      <dt className="text-muted-foreground">{label}</dt>
+      <dd className="text-foreground tabular-nums">{inr(value)}</dd>
+    </div>
+  );
+}
+
+function FareTotal({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="mt-2 flex items-center justify-between gap-4 border-t border-white/10 pt-3">
+      <dt className="text-foreground font-medium">{label}</dt>
+      <dd className="font-heading text-foreground text-lg tabular-nums">
+        {value}
+      </dd>
+    </div>
   );
 }
 
@@ -435,54 +558,101 @@ function QuickActions({
     <Card className="bg-card/40 border-white/8 shadow-none">
       <CardContent className="p-5">
         <h2 className="text-foreground text-sm font-semibold">Quick actions</h2>
-        <div className="mt-4 space-y-2.5">
-          <Button
+        <div className="mt-4 grid grid-cols-4 gap-2.5">
+          <QuickTile
+            variant="primary"
+            icon={
+              downloading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4" />
+              )
+            }
+            label="E-Ticket"
             onClick={onDownload}
             disabled={downloading || isCancelled}
-            className="h-11 w-full rounded-lg bg-[#E8AA4D] font-medium text-[#3d2817] hover:bg-[#D09840]"
-          >
-            {downloading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Download className="h-4 w-4" />
-            )}
-            Download E-Ticket
-          </Button>
-
-          <Button
-            variant="outline"
+          />
+          <QuickTile
+            icon={<FileText className="h-4 w-4" />}
+            label="Receipt"
             onClick={onReceipt}
             disabled={isCancelled}
-            className="h-11 w-full rounded-lg border-white/12 bg-transparent hover:bg-white/5"
-          >
-            <FileText className="h-4 w-4" />
-            Receipt PDF
-          </Button>
-
-          <Button
-            asChild
-            variant="outline"
-            className="h-11 w-full rounded-lg border-white/12 bg-transparent hover:bg-white/5"
-          >
-            <Link href={pnrNumber ? `/pnr/${pnrNumber}` : "/pnr"}>
-              <Search className="h-4 w-4" />
-              Re-check PNR
-            </Link>
-          </Button>
-
+          />
+          <QuickTile
+            icon={<Search className="h-4 w-4" />}
+            label="Re-check"
+            href={pnrNumber ? `/pnr/${pnrNumber}` : "/pnr"}
+          />
           {!isCancelled && (
-            <Button
-              variant="outline"
+            <QuickTile
+              variant="danger"
+              icon={<XCircle className="h-4 w-4" />}
+              label="Cancel"
               onClick={onCancel}
-              className="h-11 w-full rounded-lg border-red-500/25 bg-transparent text-red-300 hover:bg-red-500/10 hover:text-red-200"
-            >
-              <XCircle className="h-4 w-4" />
-              Cancel booking
-            </Button>
+            />
           )}
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+// A compact, square action tile — icon-in-a-box on top, label below — so the
+// quick actions read as a grid (like the dashboard shortcuts) instead of a
+// stack of full-width buttons. Renders a Link when `href` is given, else a
+// button; `variant` tints the icon box (primary = filled amber, danger = red).
+function QuickTile({
+  icon,
+  label,
+  variant = "default",
+  href,
+  onClick,
+  disabled,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  variant?: "primary" | "default" | "danger";
+  href?: string;
+  onClick?: () => void;
+  disabled?: boolean;
+}) {
+  const base =
+    "group bg-card/40 hover:bg-card/60 flex flex-col items-center gap-2 rounded-xl border border-white/8 p-3 text-center transition-colors hover:border-white/15 disabled:pointer-events-none disabled:opacity-50";
+  const iconBox = cn(
+    "flex h-9 w-9 items-center justify-center rounded-lg",
+    variant === "primary"
+      ? "bg-[#E8AA4D] text-[#3d2817]"
+      : variant === "danger"
+        ? "bg-red-500/15 text-red-300"
+        : "bg-[#3d2817] text-[#E8AA4D]"
+  );
+  const labelCls = cn(
+    "text-[11px] leading-tight font-medium",
+    variant === "danger" ? "text-red-300" : "text-foreground"
+  );
+  const inner = (
+    <>
+      <span className={iconBox}>{icon}</span>
+      <span className={labelCls}>{label}</span>
+    </>
+  );
+
+  if (href) {
+    return (
+      <Link href={href} className={base}>
+        {inner}
+      </Link>
+    );
+  }
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={base}
+    >
+      {inner}
+    </button>
   );
 }
 

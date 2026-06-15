@@ -53,13 +53,14 @@ export default function AllBookingsPage() {
 
   return (
     <div className="app-container py-10">
-      <h1 className="font-heading text-foreground text-5xl font-normal tracking-[-0.5px]">
+      <h1 className="font-heading text-foreground text-4xl font-normal tracking-[-0.5px] sm:text-5xl">
         My bookings
       </h1>
 
-      {/* Tabs + search */}
-      <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-b border-white/10">
-        <div className="-mb-px flex items-center gap-1">
+      {/* Tabs — scroll horizontally within their own strip on narrow screens
+          instead of widening the whole page. */}
+      <div className="mt-8 overflow-x-auto border-b border-white/10 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="-mb-px flex w-max items-center gap-1">
           {TABS.map((t) => {
             const active = t.key === filter;
             const count = counts[t.key];
@@ -69,7 +70,7 @@ export default function AllBookingsPage() {
                 type="button"
                 onClick={() => changeFilter(t.key)}
                 className={cn(
-                  "relative flex items-center gap-2 px-4 py-3 text-sm transition-colors",
+                  "relative flex shrink-0 items-center gap-2 px-4 py-3 text-sm transition-colors",
                   active
                     ? "text-foreground"
                     : "text-muted-foreground hover:text-foreground"
@@ -95,16 +96,17 @@ export default function AllBookingsPage() {
             );
           })}
         </div>
+      </div>
 
-        <div className="relative mb-2.5">
-          <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search PNR or train"
-            className="text-foreground placeholder:text-muted-foreground h-10 w-full rounded-lg border border-white/10 bg-white/[0.03] pr-3 pl-9 text-sm focus:border-white/25 focus:outline-none sm:w-64"
-          />
-        </div>
+      {/* Search */}
+      <div className="relative mt-4">
+        <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search PNR or train"
+          className="text-foreground placeholder:text-muted-foreground h-10 w-full rounded-lg border border-white/10 bg-white/[0.03] pr-3 pl-9 text-sm focus:border-white/25 focus:outline-none sm:max-w-xs"
+        />
       </div>
 
       {/* List */}
@@ -185,7 +187,7 @@ function BookingRow({ journey: j }: { journey: Journey }) {
     <li>
       <div className="bg-card/40 hover:bg-card/60 flex items-stretch overflow-hidden rounded-xl border border-white/8 transition-colors hover:border-white/15">
         <span className={cn("w-1 shrink-0", phase.accent)} />
-        <div className="flex flex-1 items-center justify-between gap-4 px-5 py-4">
+        <div className="flex flex-1 flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
               <span className="text-muted-foreground font-mono text-xs">
@@ -201,7 +203,7 @@ function BookingRow({ journey: j }: { journey: Journey }) {
             </p>
           </div>
 
-          <div className="flex shrink-0 items-center gap-3">
+          <div className="flex shrink-0 items-center justify-between gap-3 sm:justify-end">
             <span
               className={cn(
                 "rounded-full px-2.5 py-1 text-[11px] font-medium tracking-wide uppercase",

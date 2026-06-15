@@ -85,22 +85,22 @@ export default function BookingsPage() {
         )}
       </section>
 
-      <section className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <section className="mt-6 grid grid-cols-4 gap-2.5 sm:gap-4">
         <ActionTile
           icon={<Search className="h-4 w-4" />}
-          title="New booking"
+          title="Search"
           subtitle="Search trains"
           href="/"
         />
         <ActionTile
           icon={<FileText className="h-4 w-4" />}
-          title="PNR Status"
+          title="PNR"
           subtitle="Track confirmation"
           href="/pnr"
         />
         <ActionTile
           icon={<Users className="h-4 w-4" />}
-          title="Saved Passengers"
+          title="Passengers"
           subtitle={savedCount > 0 ? `${savedCount} saved` : "Manage list"}
           href="/passengers"
         />
@@ -177,16 +177,16 @@ export default function BookingsPage() {
 function Greeting({ firstName }: { firstName: string }) {
   const today = format(new Date(), "EEEE, dd MMM");
   return (
-    <div className="flex items-start justify-between">
-      <div>
+    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <div className="min-w-0">
         <p className="text-muted-foreground text-sm">{today}</p>
-        <h1 className="font-heading text-foreground mt-1 text-5xl font-normal tracking-[-0.5px]">
+        <h1 className="font-heading text-foreground mt-1 text-[34px] leading-[1.1] font-normal tracking-[-0.5px] break-words sm:text-5xl sm:leading-tight">
           Hello, {firstName}.
         </h1>
       </div>
       <Button
         asChild
-        className="rounded-full bg-[#E8AA4D] px-5 py-5 text-sm font-medium text-[#3d2817] hover:bg-[#D09840]"
+        className="w-full rounded-full bg-[#E8AA4D] px-5 py-5 text-sm font-medium text-[#3d2817] hover:bg-[#D09840] sm:w-auto sm:shrink-0"
       >
         <Link href="/">
           <Search className="h-4 w-4" />
@@ -210,15 +210,27 @@ function HeroCard({
     : bookingStatusMeta(journey.booking_status).label;
   return (
     <Card className="border-0 bg-[#E8AA4D] text-[#3d2817] shadow-none">
-      <CardContent className="p-8">
-        <div className="flex items-start justify-between">
-          <div>
+      <CardContent className="p-6 sm:p-8">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
             <p className="text-xs font-semibold tracking-[0.15em] text-[#3d2817]/70">
               NEXT JOURNEY · {relativeDay(journey.journey_date)}
             </p>
-            <h2 className="font-heading mt-2 flex items-center gap-3 text-4xl text-[#3d2817]">
+
+            {/* Mobile status pill — the desktop circle (right) would overlap the
+                route heading on narrow screens, so swap to an inline pill. */}
+            <span className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-[#3d2817]/10 px-3 py-1 text-xs font-medium text-[#3d2817] sm:hidden">
+              <span
+                className={`h-1.5 w-1.5 rounded-full ${
+                  allConfirmed ? "bg-emerald-700" : "bg-amber-700"
+                }`}
+              />
+              {statusText}
+            </span>
+
+            <h2 className="font-heading mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-3xl text-[#3d2817] sm:text-4xl">
               {journey.source_station}
-              <ArrowRight className="h-7 w-7" />
+              <ArrowRight className="h-6 w-6 sm:h-7 sm:w-7" />
               {journey.destination_station}
             </h2>
             <p className="mt-2 text-sm text-[#3d2817]/75">
@@ -227,7 +239,8 @@ function HeroCard({
             </p>
           </div>
 
-          <div className="flex h-24 w-24 shrink-0 flex-col items-center justify-center gap-1.5 rounded-full bg-[#3d2817]/10 text-center">
+          {/* Desktop status circle */}
+          <div className="hidden h-24 w-24 shrink-0 flex-col items-center justify-center gap-1.5 rounded-full bg-[#3d2817]/10 text-center sm:flex">
             <span
               className={`h-2 w-2 rounded-full ${
                 allConfirmed ? "bg-emerald-700" : "bg-amber-700"
@@ -239,11 +252,11 @@ function HeroCard({
           </div>
         </div>
 
-        <div className="my-8 h-px bg-[#3d2817]/15" />
+        <div className="my-6 h-px bg-[#3d2817]/15 sm:my-8" />
 
-        <div className="flex items-center gap-4 sm:gap-6">
+        <div className="flex items-center gap-3 sm:gap-6">
           <div className="shrink-0">
-            <p className="font-heading text-2xl text-[#3d2817]">
+            <p className="font-heading text-xl text-[#3d2817] sm:text-2xl">
               {journey.source_station}
             </p>
             <p className="mt-1 text-xs tracking-wider text-[#3d2817]/60 uppercase">
@@ -254,7 +267,7 @@ function HeroCard({
           <div className="flex flex-1 items-center">
             <span className="h-2 w-2 shrink-0 rounded-full bg-[#3d2817]" />
             <span className="h-px flex-1 bg-[#3d2817]/25" />
-            <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-[#3d2817]/10 px-3 py-1 text-xs font-medium text-[#3d2817]">
+            <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-[#3d2817]/10 px-2.5 py-1 text-[11px] font-medium text-[#3d2817] sm:px-3 sm:text-xs">
               <TrainFront className="h-3.5 w-3.5" />
               {formatDateShort(journey.journey_date)}
             </span>
@@ -263,7 +276,7 @@ function HeroCard({
           </div>
 
           <div className="shrink-0 text-right">
-            <p className="font-heading text-2xl text-[#3d2817]">
+            <p className="font-heading text-xl text-[#3d2817] sm:text-2xl">
               {journey.destination_station}
             </p>
             <p className="mt-1 text-xs tracking-wider text-[#3d2817]/60 uppercase">
@@ -272,7 +285,7 @@ function HeroCard({
           </div>
         </div>
 
-        <div className="mt-8 flex flex-wrap gap-3">
+        <div className="mt-6 flex flex-wrap gap-3 sm:mt-8">
           <Button
             variant="secondary"
             className="rounded-full bg-white px-5 text-[#3d2817] hover:bg-white/90"
@@ -336,13 +349,17 @@ function ActionTile({
   return (
     <Link
       href={href}
-      className="group bg-card/40 hover:bg-card/60 rounded-xl border border-white/8 p-5 transition-colors hover:border-white/15"
+      className="group bg-card/40 hover:bg-card/60 flex flex-col items-center gap-2 rounded-xl border border-white/8 p-2.5 text-center transition-colors hover:border-white/15 sm:items-start sm:gap-0 sm:p-5 sm:text-left"
     >
-      <div className="mb-4 flex h-9 w-9 items-center justify-center rounded-lg bg-[#3d2817] text-[#E8AA4D]">
+      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#3d2817] text-[#E8AA4D] sm:mb-4">
         {icon}
       </div>
-      <p className="text-foreground text-base font-medium">{title}</p>
-      <p className="text-muted-foreground mt-1 text-xs">{subtitle}</p>
+      <p className="text-foreground text-[11px] leading-tight font-medium sm:text-base">
+        {title}
+      </p>
+      <p className="text-muted-foreground hidden text-xs sm:mt-1 sm:block">
+        {subtitle}
+      </p>
     </Link>
   );
 }
