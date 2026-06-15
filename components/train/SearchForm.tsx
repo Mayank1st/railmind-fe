@@ -83,7 +83,7 @@ export default function SearchForm({
         className ?? "mt-12 rounded-2xl border border-white/10 bg-[#121713] p-6"
       }
     >
-      <div className="flex items-end gap-3">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
         {/* FROM */}
         <StationInput
           label="From"
@@ -105,9 +105,9 @@ export default function SearchForm({
             setToCode(fromCode);
             setToDisplay(fromDisplay);
           }}
-          className="mb-1 flex h-8 w-8 items-center justify-center rounded-full border border-white/10 text-white/40 hover:text-white"
+          className="flex h-8 w-8 shrink-0 items-center justify-center self-center rounded-full border border-white/10 text-white/40 hover:text-white lg:mb-1 lg:self-auto"
         >
-          <ArrowRight className="h-4 w-4" />
+          <ArrowRight className="h-4 w-4 rotate-90 lg:rotate-0" />
         </button>
 
         {/* TO */}
@@ -122,101 +122,104 @@ export default function SearchForm({
           placeholder="Destination station"
         />
 
-        {/* JOURNEY DATE */}
-        <div className="w-52">
-          <label className="mb-2 block text-xs font-medium tracking-wider text-white/40 uppercase">
-            Journey Date
-          </label>
-          <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-            <PopoverTrigger asChild>
-              <Button
-                variant="ghost"
-                type="button"
-                className="text-foreground h-auto w-full cursor-pointer justify-between rounded-lg bg-[#2a2a28] px-4 py-3 text-sm font-normal hover:bg-[#333330]"
+        {/* Date / Class / Quota / Search — 2-col on mobile, inline on desktop */}
+        <div className="grid grid-cols-2 gap-3 lg:flex lg:items-end lg:gap-3">
+          {/* JOURNEY DATE */}
+          <div className="col-span-2 lg:w-52">
+            <label className="mb-2 block text-xs font-medium tracking-wider text-white/40 uppercase">
+              Journey Date
+            </label>
+            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="ghost"
+                  type="button"
+                  className="text-foreground h-auto w-full cursor-pointer justify-between rounded-lg bg-[#2a2a28] px-4 py-3 text-sm font-normal hover:bg-[#333330]"
+                >
+                  {date ? format(date, "EEE, dd MMM") : "Select date"}
+                  <CalendarIcon className="h-4 w-4 text-white/30" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto border-white/10 bg-[#2a2a28] p-0">
+                <Calendar
+                  mode="single"
+                  selected={date}
+                  onSelect={(d) => {
+                    setDate(d);
+                    setCalendarOpen(false); // ← select hone pe close
+                  }}
+                  disabled={(d) => d < new Date()}
+                  classNames={{
+                    day_button: "cursor-pointer",
+                  }}
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          {/* CLASS */}
+          <div className="lg:w-36">
+            <label className="mb-2 block text-xs font-medium tracking-wider text-white/40 uppercase">
+              Class
+            </label>
+            <Select value={trainClass} onValueChange={setTrainClass}>
+              <SelectTrigger className="text-foreground !h-auto w-full cursor-pointer rounded-lg border-0 bg-[#2a2a28] px-4 py-3 text-sm [&>svg]:opacity-100">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent
+                position="popper"
+                sideOffset={2}
+                className="border-white/10 bg-[#2a2a28] [&_[data-slot=select-item]]:cursor-pointer"
               >
-                {date ? format(date, "EEE, dd MMM") : "Select date"}
-                <CalendarIcon className="h-4 w-4 text-white/30" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto border-white/10 bg-[#2a2a28] p-0">
-              <Calendar
-                mode="single"
-                selected={date}
-                onSelect={(d) => {
-                  setDate(d);
-                  setCalendarOpen(false); // ← select hone pe close
-                }}
-                disabled={(d) => d < new Date()}
-                classNames={{
-                  day_button: "cursor-pointer",
-                }}
-              />
-            </PopoverContent>
-          </Popover>
-        </div>
+                <SelectItem value="SL">SL</SelectItem>
+                <SelectItem value="3A">3A</SelectItem>
+                <SelectItem value="2A">2A</SelectItem>
+                <SelectItem value="1A">1A</SelectItem>
+                <SelectItem value="CC">CC</SelectItem>
+                <SelectItem value="2S">2S</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-        {/* CLASS */}
-        <div className="w-36">
-          <label className="mb-2 block text-xs font-medium tracking-wider text-white/40 uppercase">
-            Class
-          </label>
-          <Select value={trainClass} onValueChange={setTrainClass}>
-            <SelectTrigger className="text-foreground !h-auto w-full cursor-pointer rounded-lg border-0 bg-[#2a2a28] px-4 py-3 text-sm [&>svg]:opacity-100">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent
-              position="popper"
-              sideOffset={2}
-              className="border-white/10 bg-[#2a2a28] [&_[data-slot=select-item]]:cursor-pointer"
-            >
-              <SelectItem value="SL">SL</SelectItem>
-              <SelectItem value="3A">3A</SelectItem>
-              <SelectItem value="2A">2A</SelectItem>
-              <SelectItem value="1A">1A</SelectItem>
-              <SelectItem value="CC">CC</SelectItem>
-              <SelectItem value="2S">2S</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+          {/* QUOTA */}
+          <div className="lg:w-40">
+            <label className="mb-2 block text-xs font-medium tracking-wider text-white/40 uppercase">
+              Quota
+            </label>
+            <Select value={quota} onValueChange={setQuota}>
+              <SelectTrigger className="text-foreground !h-auto w-full cursor-pointer rounded-lg border-0 bg-[#2a2a28] px-4 py-3 text-sm [&>svg]:opacity-100">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent
+                position="popper"
+                sideOffset={2}
+                className="border-white/10 bg-[#2a2a28] [&_[data-slot=select-item]]:cursor-pointer"
+              >
+                <SelectItem value="GN">General</SelectItem>
+                <SelectItem value="TQ">Tatkal</SelectItem>
+                <SelectItem value="PT">Premium Tatkal</SelectItem>
+                <SelectItem value="LD">Ladies</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-        {/* QUOTA */}
-        <div className="w-40">
-          <label className="mb-2 block text-xs font-medium tracking-wider text-white/40 uppercase">
-            Quota
-          </label>
-          <Select value={quota} onValueChange={setQuota}>
-            <SelectTrigger className="text-foreground !h-auto w-full cursor-pointer rounded-lg border-0 bg-[#2a2a28] px-4 py-3 text-sm [&>svg]:opacity-100">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent
-              position="popper"
-              sideOffset={2}
-              className="border-white/10 bg-[#2a2a28] [&_[data-slot=select-item]]:cursor-pointer"
-            >
-              <SelectItem value="GN">General</SelectItem>
-              <SelectItem value="TQ">Tatkal</SelectItem>
-              <SelectItem value="PT">Premium Tatkal</SelectItem>
-              <SelectItem value="LD">Ladies</SelectItem>
-            </SelectContent>
-          </Select>
+          {/* SEARCH BUTTON */}
+          <button
+            onClick={handleSearch}
+            className="bg-accent-warm col-span-2 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl px-6 py-3 font-medium text-[#1a1a18] hover:opacity-90 lg:w-auto"
+          >
+            <Search className="h-4 w-4" />
+            Search
+          </button>
         </div>
-
-        {/* SEARCH BUTTON */}
-        <button
-          onClick={handleSearch}
-          className="bg-accent-warm flex cursor-pointer items-center gap-2 rounded-xl px-6 py-3 font-medium text-[#1a1a18] hover:opacity-90"
-        >
-          <Search className="h-4 w-4" />
-          Search
-        </button>
       </div>
 
       {/* Divider */}
       <div className="mt-4 border-t border-white/10" />
 
       {/* Row 2 — Filter options + Recent */}
-      <div className="mt-4 flex items-center justify-between gap-4">
-        <div className="flex flex-1 items-stretch gap-3">
+      <div className="mt-4 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:flex lg:flex-1 lg:items-stretch">
           {/* Flexible dates */}
           <button
             type="button"

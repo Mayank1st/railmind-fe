@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import "./globals.css";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+import MobileTabBar from "@/components/layout/MobileTabBar";
 import { AuthProvider } from "@/components/providers/AuthProvider";
 import { QueryProvider } from "@/components/providers/QueryProvider";
 import { StationsPrefetch } from "@/components/providers/StationsPrefetch";
@@ -40,13 +41,15 @@ export default async function RootLayout({
       lang="en"
       className={`${newsreader.variable} ${ibmPlexSans.variable} dark h-full antialiased`}
     >
-      <body className="flex min-h-full flex-col">
+      {/* pb on mobile reserves room for the fixed bottom tab bar */}
+      <body className="flex min-h-full flex-col pb-16 md:pb-0">
         <QueryProvider>
           <StationsPrefetch />
           <AuthProvider initialAuthed={initialAuthed}>
             <Navbar />
             {children}
             <Footer />
+            <MobileTabBar />
           </AuthProvider>
         </QueryProvider>
       </body>

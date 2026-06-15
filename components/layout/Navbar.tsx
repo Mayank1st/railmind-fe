@@ -14,6 +14,9 @@ import {
 import { useAuthStore } from "@/store/auth";
 import { authApi } from "@/lib/auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import MobileMenu from "@/components/layout/MobileMenu";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -118,134 +121,159 @@ export default function Navbar() {
           </div> */}
           </Link>
 
-          {/* ── NAV LINKS — next to logo ── */}
-          <div className="flex items-center gap-1">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={
-                  isActive(link.activePath)
-                    ? "rounded-lg bg-[#e8dcc8] px-5 py-2 text-sm font-medium text-[#3d2817]"
-                    : "rounded-lg px-5 py-2 text-sm font-normal text-white/60 hover:text-white"
-                }
-              >
-                {link.label}
-              </Link>
-            ))}
+          {/* ── NAV LINKS — next to logo (desktop only) ── */}
+          <div className="hidden items-center gap-1 md:flex">
+            {navLinks.map((link) => {
+              const active = isActive(link.activePath);
+              return (
+                <Button
+                  key={link.href}
+                  asChild
+                  variant={active ? "default" : "ghost"}
+                  className={
+                    active
+                      ? "h-auto rounded-lg bg-[#e8dcc8] px-5 py-2 text-sm font-medium text-[#3d2817] hover:bg-[#e8dcc8] hover:text-[#3d2817]"
+                      : "h-auto rounded-lg px-5 py-2 text-sm font-normal text-white/60 hover:bg-transparent hover:text-white dark:hover:bg-transparent"
+                  }
+                >
+                  <Link href={link.href}>{link.label}</Link>
+                </Button>
+              );
+            })}
           </div>
         </div>
 
         {/* ── RIGHT SIDE ── */}
         <div className="flex items-center gap-4">
-          <button className="flex items-center gap-2 rounded-full border border-white/15 px-4 py-1.5 text-sm text-[#E8AA4D]">
-            <span className="h-2 w-2 rounded-full bg-[#E8AA4D]" />
-            AI Assistant
-          </button>
+          {/* Desktop actions */}
+          <div className="hidden items-center gap-4 md:flex">
+            <Button
+              variant="ghost"
+              className="h-auto gap-2 rounded-full border border-white/15 px-4 py-1.5 text-sm font-normal text-[#E8AA4D] hover:bg-white/5 hover:text-[#E8AA4D] dark:hover:bg-white/5"
+            >
+              <span className="h-2 w-2 rounded-full bg-[#E8AA4D]" />
+              AI Assistant
+            </Button>
 
-          {status === "loading" ? (
-            <div className="h-9 w-40 animate-pulse rounded-full bg-white/5" />
-          ) : status === "authed" && user ? (
-            <>
-              <button
-                type="button"
-                aria-label="Notifications"
-                className="relative flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-white/70 hover:bg-white/5 hover:text-white"
-              >
-                <Bell className="h-5 w-5" />
-              </button>
+            {status === "loading" ? (
+              <Skeleton className="h-9 w-40 rounded-full bg-white/5" />
+            ) : status === "authed" && user ? (
+              <>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Notifications"
+                  className="relative h-9 w-9 rounded-full text-white/70 hover:bg-white/5 hover:text-white dark:hover:bg-white/5"
+                >
+                  <Bell className="size-5" />
+                </Button>
 
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    type="button"
-                    className="flex cursor-pointer items-center gap-2 rounded-full border border-white/10 py-1 pr-3 pl-1 text-sm text-white/90 hover:border-white/20 hover:bg-white/[0.03] focus:outline-none"
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      className="flex cursor-pointer items-center gap-2 rounded-full border border-white/10 py-1 pr-3 pl-1 text-sm text-white/90 hover:border-white/20 hover:bg-white/[0.03] focus:outline-none"
+                    >
+                      <Avatar className="size-7">
+                        {user.profile_photo && (
+                          <AvatarImage
+                            src={user.profile_photo}
+                            alt={getDisplayName(user.first_name, user.email)}
+                          />
+                        )}
+                        <AvatarFallback className="bg-[#E8AA4D] text-[11px] font-semibold text-[#3d2817]">
+                          {getInitials(
+                            user.first_name,
+                            user.last_name,
+                            user.email
+                          )}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="font-normal">
+                        {getDisplayName(user.first_name, user.email)}
+                      </span>
+                      <ChevronDown className="h-4 w-4 text-white/50" />
+                    </button>
+                  </DropdownMenuTrigger>
+
+                  <DropdownMenuContent
+                    align="end"
+                    sideOffset={8}
+                    className="w-60"
                   >
-                    <Avatar className="size-7">
-                      {user.profile_photo && (
-                        <AvatarImage
-                          src={user.profile_photo}
-                          alt={getDisplayName(user.first_name, user.email)}
-                        />
-                      )}
-                      <AvatarFallback className="bg-[#E8AA4D] text-[11px] font-semibold text-[#3d2817]">
-                        {getInitials(
+                    <DropdownMenuLabel className="flex flex-col gap-0.5 px-2 py-2">
+                      <span className="text-foreground text-sm font-medium">
+                        {getFullName(
                           user.first_name,
                           user.last_name,
                           user.email
                         )}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="font-normal">
-                      {getDisplayName(user.first_name, user.email)}
-                    </span>
-                    <ChevronDown className="h-4 w-4 text-white/50" />
-                  </button>
-                </DropdownMenuTrigger>
-
-                <DropdownMenuContent
-                  align="end"
-                  sideOffset={8}
-                  className="w-60"
-                >
-                  <DropdownMenuLabel className="flex flex-col gap-0.5 px-2 py-2">
-                    <span className="text-foreground text-sm font-medium">
-                      {getFullName(user.first_name, user.last_name, user.email)}
-                    </span>
-                    {user.email && (
-                      <span className="text-muted-foreground truncate text-xs font-normal">
-                        {user.email}
                       </span>
-                    )}
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onSelect={() => router.push("/profile")}>
-                    <UserIcon />
-                    Profile
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={() => router.push("/bookings")}>
-                    <Ticket />
-                    My Bookings
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={() => router.push("/passengers")}>
-                    <Users />
-                    Saved Passengers
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    variant="destructive"
-                    onSelect={handleLogout}
-                  >
-                    <LogOut />
-                    Logout
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </>
-          ) : (
-            <>
-              <Link
-                href="/login"
-                className={
-                  pathname === "/login"
-                    ? "rounded-lg bg-[#E8AA4D] px-5 py-2 text-sm font-medium text-[#1a1a18] hover:bg-[#D09840]"
-                    : "rounded-lg px-5 py-2 text-sm font-normal text-white/80 hover:text-white"
-                }
-              >
-                Login
-              </Link>
-              <Link
-                href="/register"
-                className={
-                  pathname !== "/login"
-                    ? "rounded-lg bg-[#E8AA4D] px-5 py-2 text-sm font-medium text-[#1a1a18] hover:bg-[#D09840]"
-                    : "rounded-lg px-5 py-2 text-sm font-normal text-white/80 hover:text-white"
-                }
-              >
-                Register
-              </Link>
-            </>
-          )}
+                      {user.email && (
+                        <span className="text-muted-foreground truncate text-xs font-normal">
+                          {user.email}
+                        </span>
+                      )}
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onSelect={() => router.push("/profile")}>
+                      <UserIcon />
+                      Profile
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => router.push("/bookings")}>
+                      <Ticket />
+                      My Bookings
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onSelect={() => router.push("/passengers")}
+                    >
+                      <Users />
+                      Saved Passengers
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      variant="destructive"
+                      onSelect={handleLogout}
+                    >
+                      <LogOut />
+                      Logout
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
+            ) : (
+              <>
+                <Button
+                  asChild
+                  variant={pathname === "/login" ? "default" : "ghost"}
+                  className={
+                    pathname === "/login"
+                      ? "h-auto rounded-lg bg-[#E8AA4D] px-5 py-2 text-sm font-medium text-[#1a1a18] hover:bg-[#D09840] hover:text-[#1a1a18]"
+                      : "h-auto rounded-lg px-5 py-2 text-sm font-normal text-white/80 hover:bg-transparent hover:text-white dark:hover:bg-transparent"
+                  }
+                >
+                  <Link href="/login">Login</Link>
+                </Button>
+                <Button
+                  asChild
+                  variant={pathname !== "/login" ? "default" : "ghost"}
+                  className={
+                    pathname !== "/login"
+                      ? "h-auto rounded-lg bg-[#E8AA4D] px-5 py-2 text-sm font-medium text-[#1a1a18] hover:bg-[#D09840] hover:text-[#1a1a18]"
+                      : "h-auto rounded-lg px-5 py-2 text-sm font-normal text-white/80 hover:bg-transparent hover:text-white dark:hover:bg-transparent"
+                  }
+                >
+                  <Link href="/register">Register</Link>
+                </Button>
+              </>
+            )}
+          </div>
+
+          {/* Mobile hamburger menu */}
+          <div className="md:hidden">
+            <MobileMenu />
+          </div>
         </div>
       </div>
     </nav>

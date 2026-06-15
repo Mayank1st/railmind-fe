@@ -7,7 +7,11 @@ import { receiptsApi } from "@/lib/receipt";
 async function savePdf(url: string) {
   const filename = url.split("/").pop() || "e-ticket.pdf";
   try {
-    const res = await fetch(url);
+    // Time-box the fetch: a cross-origin storage host that stalls (no CORS
+    // headers / held connection) would otherwise never settle, hanging the
+    // mutation and leaving the button stuck on "Preparing…". On timeout we
+    // abort and fall through to opening the URL directly.
+    const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
     if (!res.ok) throw new Error(`Failed to fetch PDF (${res.status})`);
     const blob = await res.blob();
     const objectUrl = URL.createObjectURL(blob);

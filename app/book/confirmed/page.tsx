@@ -30,14 +30,6 @@ import { ReceiptDialog } from "@/components/booking/receipt-dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 
 export default function BookingConfirmedPage() {
   const sp = useSearchParams();
@@ -96,9 +88,11 @@ export default function BookingConfirmedPage() {
   ).toLowerCase();
   const statusMeta = bookingStatusMeta(status);
   const isConfirmed = status === "confirmed";
-  const heroClass = isConfirmed
-    ? "border-emerald-500/20 bg-[#102a1e]"
-    : "border-amber-500/20 bg-[#2a2410]";
+  // Full-page wash fading to dark (same idea as the home hero) — green when
+  // confirmed, amber otherwise.
+  const heroGradient = isConfirmed
+    ? "linear-gradient(180deg, #0e2a1c 0%, #1a1a18 42%)"
+    : "linear-gradient(180deg, #2a2410 0%, #1a1a18 42%)";
   const heroIconClass = isConfirmed ? "bg-emerald-500" : "bg-[#E8AA4D]";
   const heroTitle = isConfirmed ? "Confirmed!" : statusMeta.label;
   const heroLine = isConfirmed
@@ -163,252 +157,229 @@ export default function BookingConfirmedPage() {
   }
 
   return (
-    <div className="app-container py-10">
-      <div className="mx-auto w-full max-w-4xl space-y-6">
-        {/* ── Success hero ── */}
-        <Card className={cn("shadow-none", heroClass)}>
-          <CardContent className="flex flex-wrap items-start justify-between gap-6 p-8">
-            <div className="flex items-start gap-4">
-              <span
-                className={cn(
-                  "flex h-11 w-11 shrink-0 items-center justify-center rounded-full",
-                  heroIconClass
-                )}
-              >
-                <Check className="h-6 w-6 text-white" strokeWidth={3} />
-              </span>
-              <div>
-                <h1 className="font-heading text-foreground text-4xl font-normal tracking-[-0.5px]">
-                  {heroTitle}
-                </h1>
-                <p className="text-muted-foreground mt-1.5 max-w-md text-sm">
-                  {heroLine}
-                </p>
-              </div>
-            </div>
+    <main className="relative min-h-screen bg-[#1a1a18]">
+      {/* Status-tinted wash fading to dark */}
+      <div
+        className="absolute inset-0"
+        style={{ backgroundImage: heroGradient }}
+      />
 
-            <div className="flex flex-col items-end">
+      <div className="app-container relative z-10 py-10">
+        <div className="mx-auto w-full max-w-4xl space-y-6">
+          {/* ── Success hero (centered) ── */}
+          <div className="flex flex-col items-center pt-4 text-center sm:pt-8">
+            <span
+              className={cn(
+                "flex h-14 w-14 shrink-0 items-center justify-center rounded-full",
+                heroIconClass
+              )}
+            >
+              <Check className="h-7 w-7 text-white" strokeWidth={3} />
+            </span>
+            <h1 className="font-heading text-foreground mt-5 text-4xl font-normal tracking-[-0.5px] sm:text-5xl">
+              {heroTitle}
+            </h1>
+            <p className="text-muted-foreground mt-3 max-w-md text-sm">
+              {heroLine}
+            </p>
+
+            <div className="mt-7 flex flex-col items-center">
               <span className="text-muted-foreground text-xs tracking-[0.18em] uppercase">
                 PNR
               </span>
-              <span className="font-heading text-foreground mt-1 text-3xl tracking-[0.06em] tabular-nums">
-                {pnr}
-              </span>
-              <button
-                type="button"
-                onClick={copyPnr}
-                className="text-muted-foreground hover:text-foreground mt-2 inline-flex items-center gap-1.5 text-xs transition-colors"
-              >
-                <Copy className="h-3.5 w-3.5" />
-                {copied ? "Copied" : "Copy"}
-              </button>
+              <div className="mt-1 flex items-center gap-3">
+                <span className="font-heading text-foreground text-3xl tracking-[0.06em] tabular-nums">
+                  {pnr}
+                </span>
+                <button
+                  type="button"
+                  onClick={copyPnr}
+                  className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-xs transition-colors"
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                  {copied ? "Copied" : "Copy"}
+                </button>
+              </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        {/* ── Ticket ── */}
-        <Card className="bg-card/40 overflow-hidden border-white/8 py-0 shadow-none">
-          <div className="h-1 bg-[#E8AA4D]" />
-          <CardContent className="p-6 sm:p-8">
-            <div className="flex items-start justify-between gap-6">
-              <div className="min-w-0">
-                <p className="text-muted-foreground text-xs">
-                  {journey.train} · {journey.cls}
-                </p>
-                <h2 className="font-heading text-foreground mt-1 truncate text-2xl">
-                  {journey.name}
-                </h2>
+          {/* ── Ticket ── */}
+          <Card className="bg-card/40 overflow-hidden border-white/8 py-0 shadow-none">
+            <div className="h-1 bg-[#E8AA4D]" />
+            <CardContent className="p-6 sm:p-8">
+              <div className="flex items-start justify-between gap-6">
+                <div className="min-w-0">
+                  <p className="text-muted-foreground text-xs">
+                    {journey.train} · {journey.cls}
+                  </p>
+                  <h2 className="font-heading text-foreground mt-1 truncate text-2xl">
+                    {journey.name}
+                  </h2>
 
-                <div className="mt-5 flex items-center gap-5">
-                  <div>
-                    <p className="text-foreground text-3xl font-medium">
-                      {journey.dep || "—"}
-                    </p>
-                    <p className="text-muted-foreground mt-1 text-sm">
-                      {journey.from} · {depDate}
-                    </p>
+                  <div className="mt-5 flex items-center gap-5">
+                    <div>
+                      <p className="text-foreground text-3xl font-medium">
+                        {journey.dep || "—"}
+                      </p>
+                      <p className="text-muted-foreground mt-1 text-sm">
+                        {journey.from} · {depDate}
+                      </p>
+                    </div>
+                    <ArrowRight className="text-muted-foreground h-5 w-5 shrink-0" />
+                    <div>
+                      <p className="text-foreground text-3xl font-medium">
+                        {journey.arr || "—"}
+                      </p>
+                      <p className="text-muted-foreground mt-1 text-sm">
+                        {journey.to} · {arrDate}
+                      </p>
+                    </div>
                   </div>
-                  <ArrowRight className="text-muted-foreground h-5 w-5 shrink-0" />
-                  <div>
-                    <p className="text-foreground text-3xl font-medium">
-                      {journey.arr || "—"}
-                    </p>
-                    <p className="text-muted-foreground mt-1 text-sm">
-                      {journey.to} · {arrDate}
-                    </p>
-                  </div>
+                </div>
+
+                {/* E-ticket placeholder */}
+                <div className="hidden h-28 w-32 shrink-0 items-center justify-center rounded-lg bg-white/90 sm:flex">
+                  <QrCode className="h-16 w-16 text-[#1a1a1a]" />
                 </div>
               </div>
 
-              {/* E-ticket placeholder */}
-              <div className="hidden h-28 w-32 shrink-0 items-center justify-center rounded-lg bg-white/90 sm:flex">
-                <QrCode className="h-16 w-16 text-[#1a1a1a]" />
-              </div>
-            </div>
-
-            {/* Passengers */}
-            <Table className="mt-6">
-              <TableHeader>
-                <TableRow className="border-white/8 hover:bg-transparent">
-                  <TableHead className="text-muted-foreground w-8 text-xs tracking-wider uppercase">
-                    #
-                  </TableHead>
-                  <TableHead className="text-muted-foreground text-xs tracking-wider uppercase">
-                    Passenger
-                  </TableHead>
-                  <TableHead className="text-muted-foreground text-xs tracking-wider uppercase">
-                    Status
-                  </TableHead>
-                  <TableHead className="text-muted-foreground text-xs tracking-wider uppercase">
-                    Coach / Berth
-                  </TableHead>
-                  <TableHead className="text-muted-foreground text-right text-xs tracking-wider uppercase">
-                    Fare
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rows.map((r, i) => (
-                  <TableRow
-                    key={r.key}
-                    className="border-white/8 hover:bg-transparent"
-                  >
-                    <TableCell className="text-muted-foreground">
-                      {i + 1}
-                    </TableCell>
-                    <TableCell className="text-foreground font-medium">
-                      {r.name}
-                      <span className="text-muted-foreground font-normal">
-                        {" "}
-                        · {r.ageGender}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={cn("border-0", r.statusClass)}>
-                        {r.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {r.seat}
-                    </TableCell>
-                    <TableCell className="text-foreground text-right tabular-nums">
-                      {r.fare != null ? inr(r.fare) : "—"}
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {rowsLoading && (
-                  <TableRow className="hover:bg-transparent">
-                    <TableCell
-                      colSpan={5}
-                      className="text-muted-foreground py-6 text-center text-sm"
-                    >
-                      <Loader2 className="mr-2 inline h-4 w-4 animate-spin" />
-                      Fetching your allotted seats…
-                    </TableCell>
-                  </TableRow>
-                )}
-                {!rowsLoading && rows.length === 0 && (
-                  <TableRow className="hover:bg-transparent">
-                    <TableCell
-                      colSpan={5}
-                      className="text-muted-foreground py-6 text-center text-sm"
-                    >
-                      Passenger details unavailable.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-
-            {/* Actions */}
-            <div className="mt-6 flex flex-wrap gap-3">
-              <Button
-                onClick={handleDownloadTicket}
-                disabled={!bookingId || downloadTicket.isPending}
-                className="cursor-pointer rounded-xl bg-[#E8AA4D] font-medium text-[#3d2817] hover:bg-[#D09840]"
-              >
-                {downloadTicket.isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+              {/* Passengers — stacked rows (no horizontal overflow on mobile) */}
+              <div className="mt-6 border-t border-white/8">
+                {rowsLoading ? (
+                  <div className="text-muted-foreground py-6 text-center text-sm">
+                    <Loader2 className="mr-2 inline h-4 w-4 animate-spin" />
+                    Fetching your allotted seats…
+                  </div>
+                ) : rows.length === 0 ? (
+                  <div className="text-muted-foreground py-6 text-center text-sm">
+                    Passenger details unavailable.
+                  </div>
                 ) : (
-                  <Download className="h-4 w-4" />
+                  <ul>
+                    {rows.map((r, i) => (
+                      <li
+                        key={r.key}
+                        className="flex items-center justify-between gap-3 border-b border-white/8 py-3.5 last:border-0"
+                      >
+                        <div className="flex min-w-0 items-baseline gap-2.5">
+                          <span className="text-muted-foreground text-sm tabular-nums">
+                            {i + 1}
+                          </span>
+                          <div className="min-w-0">
+                            <p className="text-foreground truncate text-sm font-medium">
+                              {r.name}
+                              <span className="text-muted-foreground font-normal">
+                                {" "}
+                                · {r.ageGender}
+                              </span>
+                            </p>
+                            <p className="text-muted-foreground mt-0.5 text-xs">
+                              {r.seat}
+                              {r.fare != null ? ` · ${inr(r.fare)}` : ""}
+                            </p>
+                          </div>
+                        </div>
+                        <Badge
+                          className={cn("shrink-0 border-0", r.statusClass)}
+                        >
+                          {r.status}
+                        </Badge>
+                      </li>
+                    ))}
+                  </ul>
                 )}
-                {downloadTicket.isPending
-                  ? "Preparing…"
-                  : "Download E-Ticket PDF"}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => setReceiptOpen(true)}
-                disabled={!bookingId}
-                className="cursor-pointer rounded-xl border-white/12 bg-transparent hover:bg-white/5"
-              >
-                <ReceiptText className="h-4 w-4" />
-                View Receipt
-              </Button>
-              <Button
-                asChild
-                variant="outline"
-                className="rounded-xl border-white/12 bg-transparent hover:bg-white/5"
-              >
-                <Link href="/bookings">
-                  <Bookmark className="h-4 w-4" />
-                  All Bookings
-                </Link>
-              </Button>
-              <Button
-                asChild
-                variant="outline"
-                className="rounded-xl border-white/12 bg-transparent hover:bg-white/5"
-              >
-                <Link href="/">
-                  <Home className="h-4 w-4" />
-                  Home
-                </Link>
-              </Button>
-            </div>
+              </div>
 
-            {ticketError && (
-              <p className="mt-3 text-sm text-red-300">{ticketError}</p>
-            )}
-          </CardContent>
-        </Card>
+              {/* Actions */}
+              <div className="mt-6 flex flex-wrap gap-3">
+                <Button
+                  onClick={handleDownloadTicket}
+                  disabled={!bookingId || downloadTicket.isPending}
+                  className="cursor-pointer rounded-xl bg-[#E8AA4D] font-medium text-[#3d2817] hover:bg-[#D09840]"
+                >
+                  {downloadTicket.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Download className="h-4 w-4" />
+                  )}
+                  {downloadTicket.isPending
+                    ? "Preparing…"
+                    : "Download E-Ticket PDF"}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setReceiptOpen(true)}
+                  disabled={!bookingId}
+                  className="cursor-pointer rounded-xl border-white/12 bg-transparent hover:bg-white/5"
+                >
+                  <ReceiptText className="h-4 w-4" />
+                  View Receipt
+                </Button>
+                <Button
+                  asChild
+                  variant="outline"
+                  className="rounded-xl border-white/12 bg-transparent hover:bg-white/5"
+                >
+                  <Link href="/bookings">
+                    <Bookmark className="h-4 w-4" />
+                    All Bookings
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  variant="outline"
+                  className="rounded-xl border-white/12 bg-transparent hover:bg-white/5"
+                >
+                  <Link href="/">
+                    <Home className="h-4 w-4" />
+                    Home
+                  </Link>
+                </Button>
+              </div>
 
-        {/* ── Payment summary ── */}
-        <Card className="bg-card/40 border-white/8 shadow-none">
-          <CardContent className="grid grid-cols-2 gap-6 p-6 sm:grid-cols-4">
-            <Summary label="Total paid">
-              <span className="font-heading text-foreground text-xl">
-                {inr(totalPaid)}
-              </span>
-            </Summary>
-            <Summary label="Method">
-              <span className="text-foreground">
-                {payment ? `${payment.method} · ${payment.detail}` : "—"}
-              </span>
-            </Summary>
-            <Summary label="Txn ID">
-              <span
-                title={payment?.txnId ?? undefined}
-                className="text-foreground block truncate font-mono text-sm"
-              >
-                {payment?.txnId ?? "—"}
-              </span>
-            </Summary>
-            <Summary label="Booked at">
-              <span className="text-foreground">
-                {payment?.paidAt ? fmt(payment.paidAt, "dd MMM, HH:mm") : "—"}
-              </span>
-            </Summary>
-          </CardContent>
-        </Card>
+              {ticketError && (
+                <p className="mt-3 text-sm text-red-300">{ticketError}</p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* ── Payment summary ── */}
+          <Card className="bg-card/40 border-white/8 shadow-none">
+            <CardContent className="grid grid-cols-2 gap-6 p-6 sm:grid-cols-4">
+              <Summary label="Total paid">
+                <span className="font-heading text-foreground text-xl">
+                  {inr(totalPaid)}
+                </span>
+              </Summary>
+              <Summary label="Method">
+                <span className="text-foreground">
+                  {payment ? `${payment.method} · ${payment.detail}` : "—"}
+                </span>
+              </Summary>
+              <Summary label="Txn ID">
+                <span
+                  title={payment?.txnId ?? undefined}
+                  className="text-foreground block truncate font-mono text-sm"
+                >
+                  {payment?.txnId ?? "—"}
+                </span>
+              </Summary>
+              <Summary label="Booked at">
+                <span className="text-foreground">
+                  {payment?.paidAt ? fmt(payment.paidAt, "dd MMM, HH:mm") : "—"}
+                </span>
+              </Summary>
+            </CardContent>
+          </Card>
+        </div>
+
+        <ReceiptDialog
+          open={receiptOpen}
+          onOpenChange={setReceiptOpen}
+          bookingId={bookingId}
+        />
       </div>
-
-      <ReceiptDialog
-        open={receiptOpen}
-        onOpenChange={setReceiptOpen}
-        bookingId={bookingId}
-      />
-    </div>
+    </main>
   );
 }
 
