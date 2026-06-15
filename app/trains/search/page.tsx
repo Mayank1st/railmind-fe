@@ -9,12 +9,20 @@ import {
   ArrowRight,
   MapPin,
   Sparkles,
+  SlidersHorizontal,
   Train as TrainIcon,
   ChevronDown,
   ChevronUp,
   Lock,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import {
   Select,
   SelectContent,
@@ -260,31 +268,153 @@ export default function TrainSearchPage() {
     );
   }
 
+  const filtersContent = (
+    <>
+      {/* Train Type */}
+      <FilterSection
+        title="Train Type"
+        action={
+          <button
+            onClick={resetFilters}
+            className="text-accent-warm cursor-pointer text-xs hover:underline"
+          >
+            Reset
+          </button>
+        }
+      >
+        {Object.entries(typeCounts).map(([type, count]) => (
+          <FilterCheckbox
+            key={type}
+            label={type}
+            count={count}
+            checked={selectedTypes.includes(type)}
+            onChange={() => toggleFilter(selectedTypes, setSelectedTypes, type)}
+          />
+        ))}
+      </FilterSection>
+
+      {/* Departure */}
+      <FilterSection title="Departure">
+        {DEPARTURE_BUCKETS.map((b) => (
+          <FilterCheckbox
+            key={b.key}
+            label={b.label}
+            count={departureCounts[b.key] ?? 0}
+            checked={selectedDepartures.includes(b.key)}
+            onChange={() =>
+              toggleFilter(selectedDepartures, setSelectedDepartures, b.key)
+            }
+            capitalize={false}
+          />
+        ))}
+      </FilterSection>
+
+      {/* Duration */}
+      <FilterSection title="Duration">
+        {DURATION_BUCKETS.map((b) => (
+          <FilterCheckbox
+            key={b.key}
+            label={b.label}
+            count={durationCounts[b.key] ?? 0}
+            checked={selectedDurations.includes(b.key)}
+            onChange={() =>
+              toggleFilter(selectedDurations, setSelectedDurations, b.key)
+            }
+            capitalize={false}
+          />
+        ))}
+      </FilterSection>
+
+      {/* Class Available */}
+      <div>
+        <h4 className="text-foreground/40 mb-3 text-xs font-medium tracking-wider uppercase">
+          Class Available
+        </h4>
+        <div className="flex flex-wrap gap-2">
+          {["SL", "3A", "2A", "1A", "CC", "2S"].map((c) => (
+            <span
+              key={c}
+              className={`rounded-md px-3 py-1 text-xs font-medium ${
+                c === cls
+                  ? "bg-accent-warm text-white"
+                  : "text-foreground/50 bg-white/5"
+              }`}
+            >
+              {c}
+            </span>
+          ))}
+        </div>
+      </div>
+    </>
+  );
+
   return (
     <main className="min-h-screen bg-[#1a1a18]">
       {/* ── TOP BAR — Route info ── */}
       <div className="sticky top-0 z-20 bg-[#1a1a18]">
         <div className="app-container py-4">
-          <div className="flex items-center justify-between rounded-xl border border-white/10 bg-[#121713] px-5 py-3">
-            <div className="text-foreground flex items-center gap-3 text-sm">
-              <MapPin className="text-foreground/50 h-4 w-4" />
-              <span className="font-medium">
-                {from} <span className="text-foreground/50">{fromName}</span>
+          <div className="flex items-center justify-between gap-2 rounded-xl border border-white/10 bg-[#121713] px-4 py-3 sm:px-5">
+            <div className="text-foreground flex min-w-0 items-center gap-2.5 text-sm">
+              <span className="flex shrink-0 items-center gap-2.5">
+                <MapPin className="text-foreground/50 h-4 w-4 shrink-0" />
+                <span className="font-medium">
+                  {from}
+                  <span className="text-foreground/50 hidden sm:inline">
+                    {" "}
+                    {fromName}
+                  </span>
+                </span>
+                <ArrowRight className="text-foreground/30 h-4 w-4 shrink-0" />
+                <span className="font-medium">
+                  {to}
+                  <span className="text-foreground/50 hidden sm:inline">
+                    {" "}
+                    {toName}
+                  </span>
+                </span>
               </span>
-              <ArrowRight className="text-foreground/30 h-4 w-4" />
-              <span className="font-medium">
-                {to} <span className="text-foreground/50">{toName}</span>
+              <span className="text-foreground/50 truncate text-xs sm:text-sm">
+                {dateLabel} · {cls}
+                <span className="hidden sm:inline">
+                  {" "}
+                  · {quota === "GN" ? "General" : quota}
+                </span>
               </span>
             </div>
-            <div className="flex items-center gap-4">
-              <span className="text-foreground/50 text-sm">
-                {dateLabel} · {cls} · {quota === "GN" ? "General" : quota}
-              </span>
+
+            <div className="flex shrink-0 items-center gap-2">
+              {/* Filters — mobile only (desktop has the sidebar) */}
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Filters"
+                    className="text-foreground h-9 w-9 rounded-lg border border-white/15 hover:bg-white/5 lg:hidden dark:hover:bg-white/5"
+                  >
+                    <SlidersHorizontal className="size-4" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent
+                  side="left"
+                  className="flex w-[82%] flex-col bg-[#121713] p-0 sm:max-w-sm"
+                >
+                  <div className="border-b border-white/8 p-4">
+                    <SheetTitle className="text-foreground text-base font-medium">
+                      Filters
+                    </SheetTitle>
+                  </div>
+                  <div className="flex-1 overflow-y-auto p-4">
+                    {filtersContent}
+                  </div>
+                </SheetContent>
+              </Sheet>
+
               <button
                 onClick={() => setModifyOpen((v) => !v)}
                 className="text-foreground cursor-pointer rounded-lg border border-white/15 px-4 py-1.5 text-sm hover:bg-white/5"
               >
-                {modifyOpen ? "Close" : "Modify"}
+                {modifyOpen ? "Close" : "Edit"}
               </button>
             </div>
           </div>
@@ -308,99 +438,22 @@ export default function TrainSearchPage() {
         </div>
       </div>
 
-      <div className="app-container flex gap-12 py-6">
-        {/* ── LEFT SIDEBAR — Filters ── */}
-        <aside className="sticky top-24 w-64 shrink-0 self-start">
+      <div className="app-container flex gap-6 py-6 lg:gap-12">
+        {/* ── LEFT SIDEBAR — Filters (desktop only) ── */}
+        <aside className="sticky top-24 hidden w-64 shrink-0 self-start lg:block">
           <div className="max-h-[calc(100vh-7rem)] overflow-y-auto rounded-xl border border-white/10 bg-[#121713] p-5">
-            <div className="mb-5 flex items-center justify-between">
-              <h3 className="text-foreground text-sm font-medium">Filters</h3>
-              <button
-                onClick={resetFilters}
-                className="text-accent-warm cursor-pointer text-xs hover:underline"
-              >
-                Reset
-              </button>
-            </div>
-
-            {/* Train Type */}
-            <FilterSection title="Train Type">
-              {Object.entries(typeCounts).map(([type, count]) => (
-                <FilterCheckbox
-                  key={type}
-                  label={type}
-                  count={count}
-                  checked={selectedTypes.includes(type)}
-                  onChange={() =>
-                    toggleFilter(selectedTypes, setSelectedTypes, type)
-                  }
-                />
-              ))}
-            </FilterSection>
-
-            {/* Departure */}
-            <FilterSection title="Departure">
-              {DEPARTURE_BUCKETS.map((b) => (
-                <FilterCheckbox
-                  key={b.key}
-                  label={b.label}
-                  count={departureCounts[b.key] ?? 0}
-                  checked={selectedDepartures.includes(b.key)}
-                  onChange={() =>
-                    toggleFilter(
-                      selectedDepartures,
-                      setSelectedDepartures,
-                      b.key
-                    )
-                  }
-                  capitalize={false}
-                />
-              ))}
-            </FilterSection>
-
-            {/* Duration */}
-            <FilterSection title="Duration">
-              {DURATION_BUCKETS.map((b) => (
-                <FilterCheckbox
-                  key={b.key}
-                  label={b.label}
-                  count={durationCounts[b.key] ?? 0}
-                  checked={selectedDurations.includes(b.key)}
-                  onChange={() =>
-                    toggleFilter(selectedDurations, setSelectedDurations, b.key)
-                  }
-                  capitalize={false}
-                />
-              ))}
-            </FilterSection>
-
-            {/* Class Available */}
-            <div>
-              <h4 className="text-foreground/40 mb-3 text-xs font-medium tracking-wider uppercase">
-                Class Available
-              </h4>
-              <div className="flex flex-wrap gap-2">
-                {["SL", "3A", "2A", "1A", "CC", "2S"].map((c) => (
-                  <span
-                    key={c}
-                    className={`rounded-md px-3 py-1 text-xs font-medium ${
-                      c === cls
-                        ? "bg-accent-warm text-white"
-                        : "text-foreground/50 bg-white/5"
-                    }`}
-                  >
-                    {c}
-                  </span>
-                ))}
-              </div>
-            </div>
+            <h3 className="text-foreground mb-5 text-sm font-medium">
+              Filters
+            </h3>
+            {filtersContent}
           </div>
         </aside>
 
         {/* ── RIGHT — Results ── */}
-        <div className="flex-1">
-          <div className="mb-6 flex items-start justify-between">
-            <div>
-              <h1 className="text-foreground text-3xl">
+        <div className="min-w-0 flex-1">
+          <div className="mb-6 flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h1 className="text-foreground text-2xl sm:text-3xl">
                 {filteredTrains.length} trains found
               </h1>
               <p className="text-foreground/40 mt-1 text-sm">
@@ -408,7 +461,7 @@ export default function TrainSearchPage() {
               </p>
             </div>
             <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="text-foreground w-48 cursor-pointer rounded-lg border-white/10 bg-[#121713] text-sm">
+              <SelectTrigger className="text-foreground w-40 shrink-0 cursor-pointer rounded-lg border-white/10 bg-[#121713] text-sm sm:w-48">
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
               <SelectContent className="border-white/10 bg-[#2a2a28]">
@@ -462,16 +515,21 @@ export default function TrainSearchPage() {
 // ── Filter Section ──
 function FilterSection({
   title,
+  action,
   children,
 }: {
   title: string;
+  action?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
     <div className="mb-6">
-      <h4 className="text-foreground/40 mb-3 text-xs font-medium tracking-wider uppercase">
-        {title}
-      </h4>
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <h4 className="text-foreground/40 text-xs font-medium tracking-wider uppercase">
+          {title}
+        </h4>
+        {action}
+      </div>
       <div className="space-y-2.5">{children}</div>
     </div>
   );
@@ -607,10 +665,10 @@ function TrainCard({
     >
       <div className="bg-accent-warm/40 h-1" />
 
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         {/* Row 1 — Train info */}
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-3">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
             <span className="text-foreground/50 text-sm">
               {train.train_number}
             </span>
@@ -643,13 +701,13 @@ function TrainCard({
         {/* Row 2 — Timing */}
         <div className="mt-4 flex items-center justify-between">
           <div>
-            <p className="text-foreground text-3xl font-medium">
+            <p className="text-foreground text-2xl font-medium sm:text-3xl">
               {train.departs?.slice(0, 5)}
             </p>
             <p className="text-foreground/40 text-sm">{train.from_station}</p>
           </div>
 
-          <div className="flex flex-1 flex-col items-center px-6">
+          <div className="flex flex-1 flex-col items-center px-3 sm:px-6">
             <p className="text-foreground/40 text-xs">
               {[
                 durationLabel,
@@ -666,7 +724,7 @@ function TrainCard({
           </div>
 
           <div className="text-right">
-            <p className="text-foreground text-3xl font-medium">
+            <p className="text-foreground text-2xl font-medium sm:text-3xl">
               {train.arrives?.slice(0, 5)}
             </p>
             <p className="text-foreground/40 text-sm">{train.to_station}</p>
@@ -693,7 +751,7 @@ function TrainCard({
           </button>
         ) : (
           <div className="mt-5 space-y-3" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center gap-3">
+            <div className="grid grid-cols-4 gap-2 sm:gap-3">
               {seatLoading
                 ? ["SL", "3A", "2A", "1A"].map((c) => (
                     <div
@@ -730,7 +788,7 @@ function TrainCard({
                               }
                             : undefined
                         }
-                        className={`flex-1 rounded-lg border px-3 py-2.5 transition-colors ${
+                        className={`rounded-lg border px-2 py-2.5 transition-colors sm:px-3 ${
                           c === selectedClass
                             ? "border-accent-warm/30 bg-accent-warm/10"
                             : "border-white/5 bg-white/[0.02]"
@@ -742,7 +800,7 @@ function TrainCard({
                       >
                         <p className="text-foreground/40 text-xs">{c}</p>
                         <p
-                          className={`mt-0.5 text-sm font-medium ${
+                          className={`mt-0.5 text-xs font-medium whitespace-nowrap sm:text-sm ${
                             avail?.status === "AVL"
                               ? "text-emerald-400"
                               : avail?.status === "WL"

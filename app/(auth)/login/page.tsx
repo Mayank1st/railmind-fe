@@ -97,10 +97,10 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#281506]">
+    <div className="min-h-screen bg-[#1a1a18] lg:bg-[#281506]">
       <div className="mx-auto flex min-h-screen max-w-7xl">
-        {/* ── LEFT SIDE — Marketing ── */}
-        <div className="relative flex w-1/2 flex-col justify-center px-12">
+        {/* ── LEFT SIDE — Marketing (desktop only) ── */}
+        <div className="relative hidden w-1/2 flex-col justify-center px-12 lg:flex">
           <div className="relative z-10">
             {/* Badge */}
             <span className="border-accent-warm/30 text-accent-warm mb-6 inline-flex items-center gap-2 rounded-full border bg-[#2a2318] px-4 py-1.5 text-sm">
@@ -168,9 +168,9 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* ── RIGHT SIDE — Form ── */}
-        <div className="flex w-1/2 items-center justify-end px-8">
-          <div className="w-full max-w-md rounded-2xl border border-white/15 bg-[#121713] p-8 shadow-[0_0_0_1px_rgba(255,255,255,0.04),0_24px_60px_-12px_rgba(0,0,0,0.5)]">
+        {/* ── RIGHT SIDE — Form (full-width, borderless on mobile) ── */}
+        <div className="flex w-full items-center justify-center px-4 py-10 sm:px-8 lg:w-1/2 lg:justify-end lg:py-0">
+          <div className="w-full max-w-md sm:rounded-2xl sm:border sm:border-white/15 sm:bg-[#121713] sm:p-8 sm:shadow-[0_0_0_1px_rgba(255,255,255,0.04),0_24px_60px_-12px_rgba(0,0,0,0.5)]">
             {/* Header */}
             <h2 className="text-foreground text-2xl font-semibold">
               Welcome back

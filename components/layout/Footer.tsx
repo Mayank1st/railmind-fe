@@ -3,6 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 import {
   Tooltip,
   TooltipContent,
@@ -119,7 +121,7 @@ export default function Footer() {
                 height={80}
               />
             </Link>
-            <div className="h-px w-full bg-white/10" />
+            <Separator className="bg-white/10" />
             <p className="text-sm leading-relaxed text-white/40">
               AI-powered railway reservations. Smarter searches, predictable
               confirmations.
@@ -132,14 +134,16 @@ export default function Footer() {
                   onOpenChange={(open) => setOpenSocial(open ? s.label : null)}
                 >
                   <TooltipTrigger asChild>
-                    <button
+                    <Button
                       type="button"
+                      variant="ghost"
+                      size="icon"
                       aria-label={s.label}
                       onClick={() => setOpenSocial(s.label)}
-                      className="hover:border-accent-warm/40 hover:bg-accent-warm/10 hover:text-accent-warm flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] text-white/50 transition-colors"
+                      className="hover:border-accent-warm/40 hover:bg-accent-warm/10 hover:text-accent-warm dark:hover:bg-accent-warm/10 h-10 w-10 rounded-xl border border-white/10 bg-white/[0.03] text-white/50"
                     >
                       {s.icon}
-                    </button>
+                    </Button>
                   </TooltipTrigger>
                   <TooltipContent>Coming soon</TooltipContent>
                 </Tooltip>
@@ -172,7 +176,8 @@ export default function Footer() {
         </div>
 
         {/* Bottom bar */}
-        <div className="mt-8 flex flex-col items-start justify-between gap-3 border-t border-white/8 pt-5 sm:flex-row sm:items-center">
+        <Separator className="mt-8 bg-white/8" />
+        <div className="flex flex-col items-start justify-between gap-3 pt-5 sm:flex-row sm:items-center">
           <p className="text-sm text-white/30">© 2026 RailMind Technologies</p>
           <p className="text-sm text-white/30">
             railmind.app · help@railmind.app

@@ -19,6 +19,7 @@ import { usePassengers } from "@/hooks/usePassengers";
 import { useCreatePassenger } from "@/hooks/useCreatePassenger";
 import { useFarePreview } from "@/hooks/useFarePreview";
 import { inr } from "@/lib/fare";
+import { MobileActionBar } from "@/components/booking/mobile-action-bar";
 import {
   draftToPayload,
   EMPTY_DRAFT,
@@ -285,7 +286,7 @@ export default function BookingPassengersPage() {
   }
 
   return (
-    <div className="app-container-narrow py-8">
+    <div className="app-container-narrow pt-8 pb-28 lg:pb-8">
       {/* Journey summary bar */}
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#E8AA4D]/20 bg-[#1f1810] px-5 py-3.5 text-sm">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -490,8 +491,8 @@ export default function BookingPassengersPage() {
           </Card>
         </div>
 
-        {/* ── Right column — Trip summary ── */}
-        <div>
+        {/* ── Right column — Trip summary (desktop) ── */}
+        <div className="hidden lg:block">
           <Card className="bg-card/40 sticky top-6 border-white/8 shadow-none">
             <CardContent className="p-6">
               <h2 className="font-heading text-foreground text-lg font-medium">
@@ -541,6 +542,26 @@ export default function BookingPassengersPage() {
         onOpenChange={setEditOpen}
         passenger={editing}
       />
+
+      {/* Mobile sticky action bar */}
+      <MobileActionBar>
+        <div className="min-w-0">
+          <p className="text-muted-foreground text-xs">
+            {count} passenger{count === 1 ? "" : "s"}
+          </p>
+          <p className="font-heading text-foreground text-lg">
+            {fareLoading ? "…" : inr(fareTotal ?? total)}
+          </p>
+        </div>
+        <Button
+          onClick={continueToReview}
+          disabled={count === 0}
+          className="shrink-0 rounded-xl bg-[#E8AA4D] px-6 py-5 font-medium text-[#3d2817] hover:bg-[#D09840]"
+        >
+          Review
+          <ArrowRight className="h-4 w-4" />
+        </Button>
+      </MobileActionBar>
     </div>
   );
 }

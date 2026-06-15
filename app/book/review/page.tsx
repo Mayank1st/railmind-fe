@@ -12,6 +12,7 @@ import { usePassengers } from "@/hooks/usePassengers";
 import { useCreateBooking } from "@/hooks/useCreateBooking";
 import { useFarePreview } from "@/hooks/useFarePreview";
 import { BookingStepper } from "@/components/booking/booking-stepper";
+import { MobileActionBar } from "@/components/booking/mobile-action-bar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -230,7 +231,7 @@ export default function BookingReviewPage() {
   }
 
   return (
-    <div className="app-container-narrow py-8">
+    <div className="app-container-narrow pt-8 pb-28 lg:pb-8">
       {/* Journey summary bar */}
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#E8AA4D]/20 bg-[#1f1810] px-5 py-3.5 text-sm">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -393,7 +394,7 @@ export default function BookingReviewPage() {
               <h2 className="font-heading text-foreground text-lg font-medium">
                 Cancellation Policy
               </h2>
-              <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <div className="mt-4 grid grid-cols-1 gap-3">
                 {CANCELLATION.map((c) => (
                   <div
                     key={c.window}
@@ -487,7 +488,7 @@ export default function BookingReviewPage() {
               <Button
                 onClick={proceedToPay}
                 disabled={!agreed || count === 0 || createBooking.isPending}
-                className="mt-5 w-full cursor-pointer rounded-xl bg-[#E8AA4D] py-5 font-medium text-[#3d2817] hover:bg-[#D09840]"
+                className="mt-5 hidden w-full cursor-pointer rounded-xl bg-[#E8AA4D] py-5 font-medium text-[#3d2817] hover:bg-[#D09840] lg:flex"
               >
                 {createBooking.isPending ? (
                   <>
@@ -505,6 +506,30 @@ export default function BookingReviewPage() {
           </Card>
         </div>
       </div>
+
+      {/* Mobile sticky action bar */}
+      <MobileActionBar>
+        <div className="min-w-0">
+          <p className="text-muted-foreground text-xs">Total payable</p>
+          <p className="font-heading text-foreground text-lg">
+            {inr(fareView.total)}
+          </p>
+        </div>
+        <Button
+          onClick={proceedToPay}
+          disabled={!agreed || count === 0 || createBooking.isPending}
+          className="shrink-0 cursor-pointer rounded-xl bg-[#E8AA4D] px-6 py-5 font-medium text-[#3d2817] hover:bg-[#D09840]"
+        >
+          {createBooking.isPending ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <>
+              Proceed to Pay
+              <ArrowRight className="h-4 w-4" />
+            </>
+          )}
+        </Button>
+      </MobileActionBar>
     </div>
   );
 }

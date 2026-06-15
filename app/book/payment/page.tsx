@@ -29,6 +29,7 @@ import { useInitiatePayment } from "@/hooks/useInitiatePayment";
 import { useProcessPayment } from "@/hooks/useProcessPayment";
 import { useCancelBooking } from "@/hooks/useCancelBooking";
 import { BookingStepper } from "@/components/booking/booking-stepper";
+import { MobileActionBar } from "@/components/booking/mobile-action-bar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -356,7 +357,7 @@ export default function BookingPaymentPage() {
   }
 
   return (
-    <div className="app-container-narrow py-8">
+    <div className="app-container-narrow pt-8 pb-28 lg:pb-8">
       {/* Journey summary bar */}
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#E8AA4D]/20 bg-[#1f1810] px-5 py-3.5 text-sm">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -589,7 +590,7 @@ export default function BookingPaymentPage() {
               <Button
                 onClick={confirmAndPay}
                 disabled={!canPay}
-                className="mt-5 w-full cursor-pointer rounded-xl bg-[#E8AA4D] py-5 font-medium text-[#3d2817] hover:bg-[#D09840]"
+                className="mt-5 hidden w-full cursor-pointer rounded-xl bg-[#E8AA4D] py-5 font-medium text-[#3d2817] hover:bg-[#D09840] lg:flex"
               >
                 {busy ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -629,6 +630,22 @@ export default function BookingPaymentPage() {
           </Card>
         </div>
       </div>
+
+      {/* Mobile sticky action bar */}
+      <MobileActionBar>
+        <Button
+          onClick={confirmAndPay}
+          disabled={!canPay}
+          className="w-full cursor-pointer rounded-xl bg-[#E8AA4D] py-5 font-medium text-[#3d2817] hover:bg-[#D09840]"
+        >
+          {busy ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Lock className="h-4 w-4" />
+          )}
+          {busy ? "Processing…" : `Pay ${inr(payNow)}`}
+        </Button>
+      </MobileActionBar>
     </div>
   );
 }

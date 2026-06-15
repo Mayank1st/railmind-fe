@@ -271,7 +271,7 @@ export default function TrainDetailPage() {
         <section className="overflow-hidden rounded-xl border border-white/10 bg-[#121713]">
           <div className="bg-accent-warm/40 h-1" />
           <div className="p-6">
-            <div className="flex items-start justify-between gap-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-3 text-sm">
                   <span className="text-foreground/60 font-medium">

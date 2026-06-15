@@ -61,6 +61,8 @@ export function BookingStepper({ current }: { current: number }) {
               <span
                 className={cn(
                   "text-sm transition-colors",
+                  // Mobile: only the current step shows its label (figma)
+                  !isCurrent && "hidden sm:inline",
                   isCurrent || isCompleted
                     ? "text-foreground font-medium"
                     : isClickable

@@ -88,14 +88,14 @@ export default function HomePage() {
 
         {/* Heading */}
         <div className="pt-8">
-          <h1 className="text-foreground text-[64px] leading-[1.05] font-normal tracking-[-1.28px]">
-            Book your train, with a <br />
+          <h1 className="text-foreground text-4xl leading-[1.1] font-normal tracking-[-0.5px] sm:text-5xl lg:text-[64px] lg:leading-[1.05] lg:tracking-[-1.28px]">
+            Book your train, with a <br className="hidden sm:block" />
             little less{" "}
             <span className="text-accent-warm italic">uncertainty.</span>
           </h1>
 
           {/* Subtext */}
-          <p className="text-subtext mt-6 max-w-lg text-[17px]">
+          <p className="text-subtext mt-6 max-w-lg text-[15px] sm:text-[17px]">
             Search 13,000+ trains across India. We&apos;ll predict your waitlist
             confirmation chance before you book.
           </p>
@@ -105,21 +105,23 @@ export default function HomePage() {
         <SearchForm />
 
         {/* Quick Links */}
-        <div className="mt-8 grid grid-cols-4 gap-4">
+        <div className="mt-8 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
           {quickLinks.map((link) => (
             <Link
               key={link.title}
               href={link.href}
-              className="flex items-center gap-4 rounded-2xl border border-white/10 bg-[#121713] px-5 py-4 hover:border-white/20"
+              className="flex items-center gap-3 rounded-2xl border border-white/10 bg-[#121713] px-4 py-4 hover:border-white/20 sm:gap-4 sm:px-5"
             >
-              <div className="bg-accent-warm/20 flex h-10 w-10 items-center justify-center rounded-lg">
+              <div className="bg-accent-warm/20 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg">
                 <link.icon className="text-accent-warm h-5 w-5" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <p className="text-foreground text-sm font-medium">
                   {link.title}
                 </p>
-                <p className="text-xs text-white/40">{link.subtitle}</p>
+                <p className="truncate text-xs text-white/40">
+                  {link.subtitle}
+                </p>
               </div>
             </Link>
           ))}
