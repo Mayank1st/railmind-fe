@@ -30,6 +30,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Pagination,
+  PaginationButton,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import { useSeatAvailability } from "@/hooks/useSeatAvailability";
 import { useAuthStore } from "@/store/auth";
 import SearchForm from "@/components/train/SearchForm";
@@ -121,6 +130,8 @@ export default function TrainSearchPage() {
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [selectedDepartures, setSelectedDepartures] = useState<string[]>([]);
   const [selectedDurations, setSelectedDurations] = useState<string[]>([]);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const from = searchParams.get("from");
   const to = searchParams.get("to");
@@ -128,6 +139,18 @@ export default function TrainSearchPage() {
   const quota = searchParams.get("quota") ?? "GN";
   const hours = searchParams.get("hours");
   const date = searchParams.get("date");
+  const nearby = searchParams.get("nearby") === "1";
+
+  // Reset to page 1 whenever the search itself changes (route, window, nearby
+  // flag, page size) — otherwise we'd request page 3 of a brand-new search.
+  // Done during render (not an effect), per React's "adjust state on prop
+  // change" guidance.
+  const searchKey = `${from}|${to}|${hours}|${nearby}|${pageSize}`;
+  const [prevSearchKey, setPrevSearchKey] = useState(searchKey);
+  if (searchKey !== prevSearchKey) {
+    setPrevSearchKey(searchKey);
+    setPage(1);
+  }
 
   const payload = from
     ? {
@@ -135,10 +158,17 @@ export default function TrainSearchPage() {
         toStationCode: to ?? undefined,
         hours: Number(hours) || 48,
         train_class: (cls as TrainClass) ?? undefined,
+        // Nearby toggle drives both flags: on → include nearby stations.
+        nearby_stations: nearby,
+        exact_only: !nearby,
+        sort_by: "duration",
+        page,
+        size: pageSize,
       }
     : null;
 
-  const { data, isLoading, error } = useTrainSearch(payload);
+  const { data, isLoading, error, isPlaceholderData } = useTrainSearch(payload);
+  const meta = data?.meta;
 
   // ── Client-side filter + sort ──
   const filteredTrains = (() => {
@@ -431,6 +461,7 @@ export default function TrainSearchPage() {
                 date: date ? parseISO(date) : undefined,
                 trainClass: cls,
                 quota,
+                nearby,
               }}
               onSubmitted={() => setModifyOpen(false)}
             />
@@ -454,7 +485,7 @@ export default function TrainSearchPage() {
           <div className="mb-6 flex items-start justify-between gap-3">
             <div className="min-w-0">
               <h1 className="text-foreground text-2xl sm:text-3xl">
-                {filteredTrains.length} trains found
+                {meta?.total ?? filteredTrains.length} trains found
               </h1>
               <p className="text-foreground/40 mt-1 text-sm">
                 {fromName || from} → {toName || to} · {dateLabel}
@@ -487,10 +518,14 @@ export default function TrainSearchPage() {
           )}
 
           {/* Train Cards */}
-          <div className="space-y-4">
+          <div
+            className={`space-y-4 transition-opacity ${
+              isPlaceholderData ? "opacity-60" : ""
+            }`}
+          >
             {filteredTrains.map((train) => (
               <TrainCard
-                key={train.train_number}
+                key={`${train.train_number}-${train.from_station}-${train.to_station}-${train.departs}`}
                 train={train}
                 selectedClass={cls}
                 quota={quota}
@@ -506,10 +541,88 @@ export default function TrainSearchPage() {
               </div>
             )}
           </div>
+
+          {/* Pagination + page size */}
+          {meta && meta.total > pageSize && (
+            <div className="mt-8 flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
+              {/* Pagination — first/centered on mobile, right on desktop */}
+              <Pagination className="order-1 mx-0 w-auto sm:order-2">
+                <PaginationContent className="flex-wrap justify-center">
+                  <PaginationItem>
+                    <PaginationPrevious
+                      disabled={page <= 1}
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    />
+                  </PaginationItem>
+                  {pageWindow(meta.page, meta.pages).map((it, i) =>
+                    it === "…" ? (
+                      <PaginationItem key={`gap-${i}`}>
+                        <PaginationEllipsis />
+                      </PaginationItem>
+                    ) : (
+                      <PaginationItem key={it}>
+                        <PaginationButton
+                          isActive={it === meta.page}
+                          onClick={() => setPage(it)}
+                        >
+                          {it}
+                        </PaginationButton>
+                      </PaginationItem>
+                    )
+                  )}
+                  <PaginationItem>
+                    <PaginationNext
+                      disabled={page >= meta.pages}
+                      onClick={() =>
+                        setPage((p) => Math.min(meta.pages, p + 1))
+                      }
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+
+              {/* Page size */}
+              <div className="text-foreground/50 order-2 flex items-center gap-2 text-sm sm:order-1">
+                <span>Per page</span>
+                <Select
+                  value={String(pageSize)}
+                  onValueChange={(v) => setPageSize(Number(v))}
+                >
+                  <SelectTrigger className="text-foreground h-9 w-[68px] cursor-pointer rounded-lg border-white/10 bg-[#121713] text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="border-white/10 bg-[#2a2a28]">
+                    {[10, 25, 50].map((n) => (
+                      <SelectItem key={n} value={String(n)}>
+                        {n}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <span className="hidden lg:inline">
+                  {(meta.page - 1) * pageSize + 1}–
+                  {Math.min(meta.page * pageSize, meta.total)} of {meta.total}
+                </span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </main>
   );
+}
+
+// Windowed page list with ellipses, e.g. 1 … 4 5 6 … 12.
+function pageWindow(current: number, total: number): (number | "…")[] {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  const out: (number | "…")[] = [1];
+  const start = Math.max(2, current - 1);
+  const end = Math.min(total - 1, current + 1);
+  if (start > 2) out.push("…");
+  for (let p = start; p <= end; p++) out.push(p);
+  if (end < total - 1) out.push("…");
+  out.push(total);
+  return out;
 }
 
 // ── Filter Section ──
@@ -680,6 +793,12 @@ function TrainCard({
             </span>
             <span className="text-foreground/30 text-xs">•</span>
             <span className="text-foreground/40 text-xs">{daysLabel}</span>
+            {train.is_exact_match === false && (
+              <span className="inline-flex items-center gap-1 rounded-md bg-[#E8AA4D]/15 px-2 py-0.5 text-[11px] font-medium text-[#E8AA4D]">
+                <MapPin className="h-3 w-3" />
+                Nearby
+              </span>
+            )}
           </div>
 
           {train.runs_today && (

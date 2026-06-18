@@ -1,9 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { Pencil, Plus } from "lucide-react";
+import {
+  AlertCircle,
+  Loader2,
+  MoreVertical,
+  Pencil,
+  Plus,
+  Trash2,
+} from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { toApiError } from "@/lib/api";
 import {
   berthLabel,
   genderLabel,
@@ -12,9 +20,25 @@ import {
   type Passenger,
 } from "@/lib/passengers";
 import { usePassengers } from "@/hooks/usePassengers";
+import { useDeletePassenger } from "@/hooks/useDeletePassenger";
 import { PassengerDialog } from "@/components/passengers/passenger-dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 function getInitials(name: string) {
   const parts = name.trim().split(/\s+/);
@@ -24,9 +48,14 @@ function getInitials(name: string) {
 
 export default function PassengersPage() {
   const { data: passengers = [], isLoading } = usePassengers();
+  const deletePassenger = useDeletePassenger();
+
   const [dialogOpen, setDialogOpen] = useState(false);
   // null = "add" mode, a passenger = "edit" mode.
   const [editing, setEditing] = useState<Passenger | null>(null);
+  // Passenger pending delete confirmation.
+  const [deleting, setDeleting] = useState<Passenger | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   function openAdd() {
     setEditing(null);
@@ -36,29 +65,33 @@ export default function PassengersPage() {
     setEditing(p);
     setDialogOpen(true);
   }
+  function askDelete(p: Passenger) {
+    setDeleteError(null);
+    setDeleting(p);
+  }
+
+  async function confirmDelete() {
+    if (!deleting) return;
+    setDeleteError(null);
+    try {
+      await deletePassenger.mutateAsync(deleting.id);
+      setDeleting(null);
+    } catch (e) {
+      setDeleteError(toApiError(e).message);
+    }
+  }
 
   return (
     <div className="app-container-narrow py-10">
       {/* Header */}
-      <header className="flex items-start justify-between gap-6">
-        <div className="min-w-0">
-          <h1 className="font-heading text-foreground text-3xl font-normal tracking-[-0.5px] sm:text-4xl lg:text-5xl">
-            Saved passengers
-          </h1>
-          <p className="text-muted-foreground mt-2 text-sm sm:mt-3">
-            {passengers.length} saved · Auto-fills during booking. ID is masked
-            everywhere.
-          </p>
-        </div>
-
-        {/* Desktop: header button. Mobile uses the pinned bottom button. */}
-        <Button
-          onClick={openAdd}
-          className="hidden shrink-0 rounded-full bg-[#E8AA4D] px-5 font-medium text-[#3d2817] hover:bg-[#D09840] md:inline-flex"
-        >
-          <Plus className="h-4 w-4" />
-          Add passenger
-        </Button>
+      <header className="min-w-0">
+        <h1 className="font-heading text-foreground text-3xl font-normal tracking-[-0.5px] sm:text-4xl lg:text-5xl">
+          Saved passengers
+        </h1>
+        <p className="text-muted-foreground mt-2 text-sm sm:mt-3">
+          {passengers.length} saved · Auto-fills during booking. ID is masked
+          everywhere.
+        </p>
       </header>
 
       {/* Grid */}
@@ -78,9 +111,11 @@ export default function PassengersPage() {
               key={p.id}
               passenger={p}
               onEdit={() => openEdit(p)}
+              onDelete={() => askDelete(p)}
             />
           ))}
 
+          {/* Desktop: dashed add card (mobile uses the button below) */}
           <button
             type="button"
             onClick={openAdd}
@@ -92,8 +127,7 @@ export default function PassengersPage() {
         </div>
       )}
 
-      {/* Mobile: Add button sits in flow below the list, so it moves down as
-          more passengers are added. Desktop uses the header button. */}
+      {/* Mobile: in-flow add button (the dashed card is desktop-only) */}
       <Button
         onClick={openAdd}
         className="mt-4 h-12 w-full rounded-xl bg-[#E8AA4D] text-base font-medium text-[#3d2817] hover:bg-[#D09840] md:hidden"
@@ -107,6 +141,56 @@ export default function PassengersPage() {
         onOpenChange={setDialogOpen}
         passenger={editing}
       />
+
+      {/* Delete confirmation */}
+      <Dialog
+        open={!!deleting}
+        onOpenChange={(o) => {
+          if (!o) setDeleting(null);
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Remove {deleting?.full_name}?</DialogTitle>
+            <DialogDescription>
+              This saved passenger will be permanently deleted. You can add them
+              again later.
+            </DialogDescription>
+          </DialogHeader>
+
+          {deleteError && (
+            <div className="flex items-start gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-3.5 py-3 text-sm text-red-300">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>{deleteError}</span>
+            </div>
+          )}
+
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button
+                variant="outline"
+                className="rounded-xl border-white/12 bg-transparent hover:bg-white/5"
+              >
+                Keep
+              </Button>
+            </DialogClose>
+            <Button
+              onClick={confirmDelete}
+              disabled={deletePassenger.isPending}
+              className="rounded-xl bg-red-500 font-medium text-white hover:bg-red-600"
+            >
+              {deletePassenger.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Removing…
+                </>
+              ) : (
+                "Remove"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -114,9 +198,11 @@ export default function PassengersPage() {
 function PassengerCard({
   passenger: p,
   onEdit,
+  onDelete,
 }: {
   passenger: Passenger;
   onEdit: () => void;
+  onDelete: () => void;
 }) {
   const tag = passengerTag(p);
   const doc = passengerDoc(p);
@@ -150,15 +236,28 @@ function PassengerCard({
         </p>
       </div>
 
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={onEdit}
-        aria-label={`Edit ${p.full_name}`}
-        className="text-muted-foreground hover:text-foreground size-8 shrink-0"
-      >
-        <Pencil className="h-4 w-4" />
-      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label={`Options for ${p.full_name}`}
+            className="text-muted-foreground hover:text-foreground size-8 shrink-0"
+          >
+            <MoreVertical className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-36">
+          <DropdownMenuItem onClick={onEdit}>
+            <Pencil className="h-4 w-4" />
+            Edit
+          </DropdownMenuItem>
+          <DropdownMenuItem variant="destructive" onClick={onDelete}>
+            <Trash2 className="h-4 w-4" />
+            Delete
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 }

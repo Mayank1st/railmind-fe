@@ -34,6 +34,7 @@ export type SearchFormDefaults = {
   date?: Date;
   trainClass?: string;
   quota?: string;
+  nearby?: boolean;
 };
 
 type SearchFormProps = {
@@ -57,7 +58,9 @@ export default function SearchForm({
   const [trainClass, setTrainClass] = useState(defaults?.trainClass ?? "SL");
   const [quota, setQuota] = useState(defaults?.quota ?? "GN");
   const [flexibleDates, setFlexibleDates] = useState(false);
-  const [nearbyStations, setNearbyStations] = useState(false);
+  const [nearbyStations, setNearbyStations] = useState(
+    defaults?.nearby ?? false
+  );
 
   const handleSearch = () => {
     if (!fromCode || !toCode) return;
@@ -72,6 +75,10 @@ export default function SearchForm({
 
     if (date) {
       params.set("date", format(date, "yyyy-MM-dd"));
+    }
+    // "Nearby stations" ON → search also covers nearby stations (exact_only=false).
+    if (nearbyStations) {
+      params.set("nearby", "1");
     }
     router.push(`/trains/search?${params.toString()}`);
     onSubmitted?.();

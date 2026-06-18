@@ -30,6 +30,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { ComingSoonBadge } from "@/components/ui/coming-soon-badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -51,9 +52,9 @@ type TabId = "personal" | "contact" | "security" | "kyc" | "notifications";
 const TABS: { id: TabId; label: string; badge?: string }[] = [
   { id: "personal", label: "Personal" },
   { id: "contact", label: "Contact" },
-  { id: "security", label: "Security" },
+  { id: "security", label: "Security", badge: "Coming soon" },
   { id: "kyc", label: "KYC", badge: "Phase 2" },
-  { id: "notifications", label: "Notifications" },
+  { id: "notifications", label: "Notifications", badge: "Coming soon" },
 ];
 
 function getInitials(
@@ -431,7 +432,7 @@ function PersonalTab() {
       <SectionCard
         title="Account & preferences"
         action={
-          <SectionAction icon={<Settings className="h-3.5 w-3.5" />}>
+          <SectionAction icon={<Settings className="h-3.5 w-3.5" />} soon>
             Manage
           </SectionAction>
         }
@@ -468,7 +469,7 @@ function ContactTab() {
       <SectionCard
         title="Contact details"
         action={
-          <SectionAction icon={<Pencil className="h-3.5 w-3.5" />}>
+          <SectionAction icon={<Pencil className="h-3.5 w-3.5" />} soon>
             Edit
           </SectionAction>
         }
@@ -505,7 +506,7 @@ function ContactTab() {
       <SectionCard
         title="Address"
         action={
-          <SectionAction icon={<Settings className="h-3.5 w-3.5" />}>
+          <SectionAction icon={<Settings className="h-3.5 w-3.5" />} soon>
             Manage
           </SectionAction>
         }
@@ -1087,12 +1088,16 @@ function SectionAction({
   children,
   onClick,
   disabled,
+  soon,
 }: {
   icon: React.ReactNode;
   children: React.ReactNode;
   onClick?: () => void;
   disabled?: boolean;
+  soon?: boolean;
 }) {
+  // Action isn't built yet — show a badge in place of the clickable link.
+  if (soon) return <ComingSoonBadge />;
   return (
     <Button
       variant="link"

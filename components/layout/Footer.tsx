@@ -69,8 +69,8 @@ const links = [
     items: [
       { label: "Search Trains", href: "/" },
       { label: "PNR Status", href: "/pnr" },
-      { label: "Live Running", href: "#" },
-      { label: "Fare Enquiry", href: "#" },
+      { label: "Live Running", href: "/live/12951" },
+      { label: "Fare Enquiry", href: "/fare" },
     ],
   },
   {
@@ -86,7 +86,7 @@ const links = [
     heading: "Company",
     items: [
       { label: "About", href: "#" },
-      { label: "Help Center", href: "#" },
+      { label: "Help Center", href: "/help" },
       { label: "Contact", href: "#" },
       { label: "Press", href: "#" },
     ],
@@ -94,10 +94,10 @@ const links = [
   {
     heading: "Legal",
     items: [
-      { label: "Terms", href: "#" },
-      { label: "Privacy", href: "#" },
-      { label: "Refunds", href: "#" },
-      { label: "IRCTC Compliance", href: "#" },
+      { label: "Terms", href: "/legal/terms" },
+      { label: "Privacy", href: "/legal/privacy" },
+      { label: "Refunds", href: "/legal/refunds" },
+      { label: "IRCTC Compliance", href: "/legal/irctc" },
     ],
   },
 ];

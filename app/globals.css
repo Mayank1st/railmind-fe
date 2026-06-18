@@ -181,3 +181,76 @@
   max-width: var(--app-max-width-narrow);
   padding-inline: var(--app-gutter);
 }
+
+/* ── Live Running animations ──
+   The train marker rocks like it's riding the rail, a spark runs along the
+   covered track, the LIVE dot blinks, and the current station node pulses. */
+/* Only the rock/bob — centering lives on the wrapper so it survives
+   prefers-reduced-motion (which disables this animation). */
+@keyframes rm-badge-roll {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-6deg);
+  }
+  50% {
+    transform: translateY(-2px) rotate(6deg);
+  }
+}
+@keyframes rm-track-pulse {
+  0% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  70%,
+  100% {
+    opacity: 0;
+    transform: scale(2.4);
+  }
+}
+@keyframes rm-live-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+@keyframes rm-spark-move {
+  0% {
+    left: -12%;
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    left: 102%;
+    opacity: 0;
+  }
+}
+
+.rm-badge-roll {
+  animation: rm-badge-roll 1.6s ease-in-out infinite;
+}
+.rm-track-spark {
+  animation: rm-spark-move 2.4s linear infinite;
+}
+.rm-live-dot {
+  animation: rm-live-blink 1.2s ease-in-out infinite;
+}
+.rm-pulse-ring {
+  animation: rm-track-pulse 1.8s ease-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rm-badge-roll,
+  .rm-track-spark,
+  .rm-live-dot,
+  .rm-pulse-ring {
+    animation: none !important;
+  }
+}

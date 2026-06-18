@@ -70,3 +70,44 @@ export const fareApi = {
       .post<{ data: FarePreview }>("/bookings/fare-preview", params)
       .then((r) => r.data.data),
 };
+
+// ── Class-wise fare enquiry (GET /fare/enquiry) ──────────────────────────────
+export type FareClass = {
+  train_class: string;
+  base_fare: number;
+  telescopic_discount: number;
+  superfast_charge: number;
+  reservation_charge: number;
+  tatkal_premium: number;
+  concession_amount: number;
+  subtotal: number;
+  gst: number;
+  service_charge: number;
+  total_fare: number;
+};
+
+export type FareEnquiry = {
+  train_number: string;
+  train_name: string;
+  source: { code: string; name: string };
+  destination: { code: string; name: string };
+  journey_date: string;
+  distance_km: number;
+  quota: string;
+  fares: FareClass[];
+};
+
+export type FareEnquiryParams = {
+  train_number: string;
+  source_station_code: string;
+  destination_station_code: string;
+  journey_date: string;
+};
+
+export const fareEnquiryApi = {
+  // GET /fare/enquiry?train_number=&source_station_code=&destination_station_code=&journey_date=
+  enquiry: (params: FareEnquiryParams) =>
+    api
+      .get<{ data: FareEnquiry }>("/fare/enquiry", { params })
+      .then((r) => r.data.data),
+};
