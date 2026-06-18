@@ -9,6 +9,7 @@ import {
   Clock,
   CreditCard,
   Info,
+  type LucideIcon,
   Menu,
   Search,
   Settings,
@@ -19,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/auth";
 import { authApi } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
+import { ComingSoonBadge } from "@/components/ui/coming-soon-badge";
 import {
   Sheet,
   SheetClose,
@@ -29,11 +31,18 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 
-const menu = [
+type MenuItem = {
+  label: string;
+  href: string;
+  icon: LucideIcon;
+  soon?: boolean;
+};
+
+const menu: MenuItem[] = [
   { label: "Search Trains", href: "/", icon: Search },
   { label: "PNR Status", href: "/pnr", icon: ClipboardList },
-  { label: "Live Running", href: "#", icon: Clock },
-  { label: "Fare Enquiry", href: "#", icon: CreditCard },
+  { label: "Live Running", href: "/live/12951", icon: Clock },
+  { label: "Fare Enquiry", href: "/fare", icon: CreditCard },
   { label: "My Bookings", href: "/bookings", icon: Bookmark },
   { label: "Saved Passengers", href: "/passengers", icon: User },
   { label: "Profile & Settings", href: "/profile", icon: Settings },
@@ -125,6 +134,19 @@ export default function MobileMenu() {
 
         <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-3 py-2">
           {menu.map((item) => {
+            // Not built yet — show it disabled with a "Coming soon" badge.
+            if (item.soon) {
+              return (
+                <div
+                  key={item.label}
+                  className="flex cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-white/40"
+                >
+                  <item.icon className="size-[18px] text-white/30" />
+                  {item.label}
+                  <ComingSoonBadge className="ml-auto px-1.5 py-0 text-[10px]" />
+                </div>
+              );
+            }
             const active = isActive(item.href);
             return (
               <SheetClose asChild key={item.label}>

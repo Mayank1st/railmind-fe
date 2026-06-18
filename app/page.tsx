@@ -1,6 +1,8 @@
 "use client";
 
 import SearchForm from "@/components/train/SearchForm";
+import { ComingSoonBadge } from "@/components/ui/coming-soon-badge";
+import { LiveRunningDialog } from "@/components/live/live-running-dialog";
 import Link from "next/link";
 import {
   ClipboardList,
@@ -8,9 +10,18 @@ import {
   Receipt,
   Bookmark,
   ArrowRight,
+  type LucideIcon,
 } from "lucide-react";
 
-const quickLinks = [
+type QuickLink = {
+  icon: LucideIcon;
+  title: string;
+  subtitle: string;
+  href: string;
+  dialog?: boolean;
+};
+
+const quickLinks: QuickLink[] = [
   {
     icon: ClipboardList,
     title: "PNR Status",
@@ -21,13 +32,14 @@ const quickLinks = [
     icon: Clock,
     title: "Live Running",
     subtitle: "Where is my train",
-    href: "#",
+    href: "/live/12951",
+    dialog: true,
   },
   {
     icon: Receipt,
     title: "Fare Enquiry",
     subtitle: "Class-wise breakup",
-    href: "#",
+    href: "/fare",
   },
   {
     icon: Bookmark,
@@ -106,25 +118,42 @@ export default function HomePage() {
 
         {/* Quick Links */}
         <div className="mt-8 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-          {quickLinks.map((link) => (
-            <Link
-              key={link.title}
-              href={link.href}
-              className="flex items-center gap-3 rounded-2xl border border-white/10 bg-[#121713] px-4 py-4 hover:border-white/20 sm:gap-4 sm:px-5"
-            >
-              <div className="bg-accent-warm/20 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg">
-                <link.icon className="text-accent-warm h-5 w-5" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-foreground text-sm font-medium">
-                  {link.title}
-                </p>
-                <p className="truncate text-xs text-white/40">
-                  {link.subtitle}
-                </p>
-              </div>
-            </Link>
-          ))}
+          {quickLinks.map((link) => {
+            const tileClass =
+              "flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-[#121713] px-4 py-4 text-left hover:border-white/20 sm:gap-4 sm:px-5";
+            const inner = (
+              <>
+                <div className="bg-accent-warm/20 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg">
+                  <link.icon className="text-accent-warm h-5 w-5" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-foreground text-sm font-medium">
+                    {link.title}
+                  </p>
+                  <p className="truncate text-xs text-white/40">
+                    {link.subtitle}
+                  </p>
+                </div>
+              </>
+            );
+
+            // Live Running asks for train number + date in a modal first.
+            if (link.dialog) {
+              return (
+                <LiveRunningDialog key={link.title}>
+                  <button type="button" className={tileClass}>
+                    {inner}
+                  </button>
+                </LiveRunningDialog>
+              );
+            }
+
+            return (
+              <Link key={link.title} href={link.href} className={tileClass}>
+                {inner}
+              </Link>
+            );
+          })}
         </div>
 
         {/* Trending this week */}
@@ -190,13 +219,19 @@ export default function HomePage() {
           </div>
 
           <div className="rounded-2xl border border-white/10 bg-[#121713] p-8">
-            <h3 className="text-foreground text-xl font-semibold">
-              Need help?
-            </h3>
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="text-foreground text-xl font-semibold">
+                Need help?
+              </h3>
+              <ComingSoonBadge />
+            </div>
             <p className="mt-2 text-sm leading-relaxed text-white/50">
               24/7 support for cancellations, refunds, or boarding queries.
             </p>
-            <button className="mt-5 cursor-pointer rounded-lg bg-white px-5 py-2.5 text-sm font-medium text-[#1a1a18] hover:bg-white/90">
+            <button
+              disabled
+              className="mt-5 cursor-not-allowed rounded-lg bg-white px-5 py-2.5 text-sm font-medium text-[#1a1a18] opacity-50"
+            >
               Open chat
             </button>
           </div>

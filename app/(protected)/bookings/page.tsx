@@ -294,11 +294,16 @@ function HeroCard({
             E-Ticket
           </Button>
           <Button
+            asChild
             variant="ghost"
             className="rounded-full bg-[#3d2817]/10 px-5 text-[#3d2817] hover:bg-[#3d2817]/15"
           >
-            <Radio className="h-4 w-4" />
-            Live status
+            <Link
+              href={`/live/${journey.train_number}?date=${journey.journey_date}`}
+            >
+              <Radio className="h-4 w-4" />
+              Live status
+            </Link>
           </Button>
           <Button
             variant="ghost"

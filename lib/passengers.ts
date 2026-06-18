@@ -46,6 +46,8 @@ export const passengersApi = {
     api
       .patch<{ data: Passenger }>(`/passenger/${id}`, payload)
       .then((r) => r.data.data),
+
+  remove: (id: string) => api.delete(`/passenger/${id}`).then(() => id),
 };
 
 /* ── Shared option lists + label helpers (used by both pages) ── */

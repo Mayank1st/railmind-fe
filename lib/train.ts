@@ -34,8 +34,12 @@ export type Train = {
   departs: string;
   arrives: string;
   journey_km: number;
+  duration_minutes?: number;
   runs_on_days: string[];
   runs_today: boolean | null;
+  // false when the train is matched via a nearby station rather than the exact
+  // searched station (only present when exact_only=false / nearby search).
+  is_exact_match?: boolean;
 };
 
 export type TrainSearchPayload = {
@@ -44,14 +48,30 @@ export type TrainSearchPayload = {
   hours?: number;
   train_class?: TrainClass;
   journey_date?: string;
+  // exact_only=true → only the searched station; false → also include nearby
+  // stations (the "Nearby stations" toggle drives these two together).
+  nearby_stations?: boolean;
+  exact_only?: boolean;
+  sort_by?: string;
+  page?: number;
+  size?: number;
 };
 
-export type TrainSearchResponse = {
-  source: string;
+export type TrainSearchMeta = {
   total: number;
+  page: number;
+  size: number;
+  pages: number;
   from_time: string;
   to_time: string;
+  nearby_stations: boolean;
+};
+
+// The API now returns the list in `data` and pagination/flags in `meta`; we
+// fold them into one object so callers read `result.trains` / `result.meta`.
+export type TrainSearchResult = {
   trains: Train[];
+  meta: TrainSearchMeta;
 };
 
 export type TrainScheduleStop = {
@@ -108,10 +128,10 @@ export type SeatAvailabilityResponse = {
 };
 
 export const trainSearchApi = {
-  trainSearch: (payload: TrainSearchPayload) =>
+  trainSearch: (payload: TrainSearchPayload): Promise<TrainSearchResult> =>
     api
-      .post<{ data: TrainSearchResponse }>("/train/search", payload)
-      .then((r) => r.data.data),
+      .post<{ data: Train[]; meta: TrainSearchMeta }>("/train/search", payload)
+      .then((r) => ({ trains: r.data.data ?? [], meta: r.data.meta })),
 
   getTrainDetails: (trainNumber: string) =>
     api

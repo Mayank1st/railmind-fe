@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
 import { Mail, Phone, Search, Sparkles } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -10,6 +9,7 @@ import { useAllFaqs } from "@/hooks/useFaqs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { ComingSoonBadge } from "@/components/ui/coming-soon-badge";
 import {
   Accordion,
   AccordionContent,
@@ -224,14 +224,20 @@ export default function HelpPage() {
                   <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#3d2817]/15">
                     <Sparkles className="h-5 w-5 text-[#3d2817]" />
                   </span>
-                  <h3 className="font-heading mt-4 text-xl">
-                    Chat with AI Assistant
-                  </h3>
+                  <div className="mt-4 flex flex-wrap items-center gap-2">
+                    <h3 className="font-heading text-xl">
+                      Chat with AI Assistant
+                    </h3>
+                    <ComingSoonBadge className="border-[#3d2817]/20 bg-[#3d2817]/10 text-[#3d2817]" />
+                  </div>
                   <p className="mt-1.5 text-sm text-[#3d2817]/80">
                     Instant answers, 24/7. Handles most queries without an
                     agent.
                   </p>
-                  <Button className="mt-5 w-full cursor-pointer rounded-xl bg-white py-5 font-medium text-[#3d2817] hover:bg-white/90">
+                  <Button
+                    disabled
+                    className="mt-5 w-full rounded-xl bg-white py-5 font-medium text-[#3d2817] hover:bg-white/90"
+                  >
                     Open chat
                   </Button>
                 </CardContent>
@@ -261,19 +267,18 @@ export default function HelpPage() {
 
               <Card className="bg-card/40 border-white/8 shadow-none">
                 <CardContent className="p-6">
-                  <h3 className="text-foreground font-medium">System status</h3>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="text-foreground font-medium">
+                      System status
+                    </h3>
+                    <ComingSoonBadge />
+                  </div>
                   <p className="mt-3 flex items-center gap-2 text-sm">
                     <span className="h-2 w-2 rounded-full bg-emerald-500" />
                     <span className="text-foreground/90">
                       All systems operational
                     </span>
                   </p>
-                  <Link
-                    href="#"
-                    className="text-accent-warm mt-3 inline-block text-sm hover:underline"
-                  >
-                    View status page →
-                  </Link>
                 </CardContent>
               </Card>
             </aside>
