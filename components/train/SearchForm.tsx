@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Search,
@@ -25,6 +25,18 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import StationInput from "@/components/train/StationInput";
+import { useAuthStore } from "@/store/auth";
+import { useRecentSearches } from "@/hooks/useRecentSearches";
+import { useStationCluster } from "@/hooks/useStationCluster";
+import {
+  pushGuestRecent,
+  readGuestRecents,
+  type RecentSearch,
+} from "@/lib/searchHistory";
+
+function nameFromDisplay(display: string, code: string): string {
+  return display.split(" · ")[1] ?? code;
+}
 
 export type SearchFormDefaults = {
   fromCode?: string;
@@ -35,6 +47,7 @@ export type SearchFormDefaults = {
   trainClass?: string;
   quota?: string;
   nearby?: boolean;
+  flex?: boolean;
 };
 
 type SearchFormProps = {
@@ -57,29 +70,75 @@ export default function SearchForm({
   const [date, setDate] = useState<Date | undefined>(defaults?.date);
   const [trainClass, setTrainClass] = useState(defaults?.trainClass ?? "SL");
   const [quota, setQuota] = useState(defaults?.quota ?? "GN");
-  const [flexibleDates, setFlexibleDates] = useState(false);
+  const [flexibleDates, setFlexibleDates] = useState(defaults?.flex ?? false);
   const [nearbyStations, setNearbyStations] = useState(
     defaults?.nearby ?? false
   );
 
+  const authed = useAuthStore((s) => s.status) === "authed";
+
+  // Recent searches — API for logged-in users (backend logs them on search),
+  // localStorage for guests.
+  const { data: apiRecents } = useRecentSearches(authed);
+  const [guestRecents, setGuestRecents] = useState<RecentSearch[]>([]);
+  useEffect(() => {
+    if (authed) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setGuestRecents(readGuestRecents());
+  }, [authed]);
+  const recents = (authed ? (apiRecents ?? []) : guestRecents).slice(0, 4);
+
+  // Nearby-station cluster for the source → "CSMT, LTT also covered" text.
+  const { data: cluster } = useStationCluster(fromCode);
+  const alsoCovered =
+    cluster?.in_cluster && cluster.also_covered.length
+      ? cluster.also_covered.slice(0, 3).join(", ")
+      : null;
+
+  function selectRecent(r: RecentSearch) {
+    setFromCode(r.source.code);
+    setFromDisplay(`${r.source.code} · ${r.source.name}`);
+    setToCode(r.destination.code);
+    setToDisplay(`${r.destination.code} · ${r.destination.name}`);
+    if (r.train_class) setTrainClass(r.train_class);
+    if (r.quota) setQuota(r.quota);
+  }
+
   const handleSearch = () => {
     if (!fromCode || !toCode) return;
 
+    const journeyDate = format(date ?? new Date(), "yyyy-MM-dd");
     const params = new URLSearchParams({
       from: fromCode,
       to: toCode,
       class: trainClass,
       quota: quota,
-      hours: "48",
+      date: journeyDate,
     });
 
-    if (date) {
-      params.set("date", format(date, "yyyy-MM-dd"));
-    }
     // "Nearby stations" ON → search also covers nearby stations (exact_only=false).
     if (nearbyStations) {
       params.set("nearby", "1");
     }
+    // "Flexible dates" ON → also search ±1 day around the chosen date.
+    if (flexibleDates) {
+      params.set("flex", "1");
+    }
+
+    // Backend logs recents for logged-in users; mirror it on-device for guests.
+    if (!authed) {
+      pushGuestRecent({
+        source: {
+          code: fromCode,
+          name: nameFromDisplay(fromDisplay, fromCode),
+        },
+        destination: { code: toCode, name: nameFromDisplay(toDisplay, toCode) },
+        journey_date: journeyDate,
+        train_class: trainClass,
+        quota,
+      });
+    }
+
     router.push(`/trains/search?${params.toString()}`);
     onSubmitted?.();
   };
@@ -155,7 +214,13 @@ export default function SearchForm({
                     setDate(d);
                     setCalendarOpen(false); // ← select hone pe close
                   }}
-                  disabled={(d) => d < new Date()}
+                  // API allows today … today + 120 days only.
+                  disabled={(d) => {
+                    const today = new Date(new Date().toDateString());
+                    const max = new Date(today);
+                    max.setDate(max.getDate() + 120);
+                    return d < today || d > max;
+                  }}
                   classNames={{
                     day_button: "cursor-pointer",
                   }}
@@ -268,8 +333,10 @@ export default function SearchForm({
               <p className="text-sm font-medium text-white/80">
                 Nearby stations
               </p>
-              <p className="text-xs text-white/30">
-                BCT, CST, LTT also covered
+              <p className="truncate text-xs text-white/30">
+                {alsoCovered
+                  ? `${alsoCovered} also covered`
+                  : "Include nearby stations"}
               </p>
             </div>
             <div
@@ -302,32 +369,23 @@ export default function SearchForm({
         </div>
 
         {/* Recent searches */}
-        <div className="shrink-0 text-sm text-white/40">
-          Recent:{" "}
-          <span
-            onClick={() => {
-              setFromCode("BCT");
-              setFromDisplay("BCT · Mumbai Centr");
-              setToCode("NDLS");
-              setToDisplay("NDLS · New Delhi");
-            }}
-            className="text-accent-warm cursor-pointer hover:underline"
-          >
-            BCT → NDLS
-          </span>
-          {" · "}
-          <span
-            onClick={() => {
-              setFromCode("SBC");
-              setFromDisplay("SBC · KSR Bengaluru");
-              setToCode("MAS");
-              setToDisplay("MAS · Chennai Ctrl");
-            }}
-            className="text-accent-warm cursor-pointer hover:underline"
-          >
-            SBC → MAS
-          </span>
-        </div>
+        {recents.length > 0 && (
+          <div className="shrink-0 text-sm text-white/40">
+            Recent:{" "}
+            {recents.map((r, i) => (
+              <span key={r.id}>
+                {i > 0 && <span className="mx-1 text-white/25">·</span>}
+                <button
+                  type="button"
+                  onClick={() => selectRecent(r)}
+                  className="text-accent-warm cursor-pointer hover:underline"
+                >
+                  {r.source.code} → {r.destination.code}
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

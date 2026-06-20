@@ -141,6 +141,9 @@ export type BookingDetail = {
   source_station_code: string;
   destination_station_name: string;
   destination_station_code: string;
+  // "CHART PREPARED" | "CHART NOT PREPARED" — set once the railway prepares the
+  // chart; after this each passenger's status is final.
+  chart_status?: string;
 };
 
 export type CancelledBooking = {

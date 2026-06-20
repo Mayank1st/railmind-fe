@@ -154,6 +154,7 @@ export default function BookingDetailPage() {
             />
             {!isCancelled && (
               <ChartStatusCard
+                chartStatus={booking.data.chart_status}
                 journeyDate={booking.data.journey_date}
                 departureTime={receipt.data?.journey.departure_time}
               />
@@ -354,11 +355,11 @@ function PassengerTable({
               </p>
               <span
                 className={cn(
-                  "shrink-0 rounded-md px-2 py-0.5 text-[11px] font-medium",
+                  "shrink-0 rounded-md px-2 py-0.5 text-[11px] font-medium whitespace-nowrap",
                   paxStatusClass(p.passenger_status)
                 )}
               >
-                {p.passenger_status}
+                {paxStatusLabel(p.passenger_status)}
               </span>
             </div>
             <div className="mt-2 flex items-center justify-between gap-3 text-sm">
@@ -402,11 +403,11 @@ function PassengerTable({
                 <td className="py-3">
                   <span
                     className={cn(
-                      "rounded-md px-2 py-0.5 text-[11px] font-medium",
+                      "rounded-md px-2 py-0.5 text-[11px] font-medium whitespace-nowrap",
                       paxStatusClass(p.passenger_status)
                     )}
                   >
-                    {p.passenger_status}
+                    {paxStatusLabel(p.passenger_status)}
                   </span>
                 </td>
                 <td className="text-foreground py-3 tabular-nums">
@@ -660,12 +661,20 @@ function QuickTile({
 // reservation chart ~4 hours before departure; once that moment passes the
 // chart is considered prepared.
 function ChartStatusCard({
+  chartStatus,
   journeyDate,
   departureTime,
 }: {
+  chartStatus?: string;
   journeyDate: string;
   departureTime?: string;
 }) {
+  // Prefer the backend's authoritative chart_status; fall back to the
+  // departure − 4h heuristic when it isn't present.
+  const upper = chartStatus?.toUpperCase();
+  const apiPrepared =
+    upper != null ? upper.includes("PREPARED") && !upper.includes("NOT") : null;
+
   const prep =
     departureTime && journeyDate
       ? (() => {
@@ -673,7 +682,7 @@ function ChartStatusCard({
           return isValid(dep) ? subHours(dep, 4) : null;
         })()
       : null;
-  const prepared = prep ? isBefore(prep, new Date()) : false;
+  const prepared = apiPrepared ?? (prep ? isBefore(prep, new Date()) : false);
 
   return (
     <Card className="bg-card/40 border-white/8 shadow-none">
@@ -687,15 +696,15 @@ function ChartStatusCard({
             )}
           />
           <span className="text-foreground text-sm">
-            {prepared ? "Prepared" : "Not yet prepared"}
+            {prepared ? "Chart prepared" : "Not yet prepared"}
           </span>
         </div>
         <p className="text-muted-foreground mt-1.5 text-sm">
-          {prep
-            ? prepared
-              ? `Chart was prepared around ${format(prep, "HH:mm 'on' dd MMM")}.`
-              : `Chart prepares 4h before departure (${format(prep, "HH:mm 'on' dd MMM")}).`
-            : "Chart prepares around 4 hours before departure."}
+          {prepared
+            ? "Passenger status is final. Online cancellation may no longer be allowed."
+            : prep
+              ? `Chart prepares 4h before departure (${format(prep, "HH:mm 'on' dd MMM")}).`
+              : "Chart prepares around 4 hours before departure."}
         </p>
       </CardContent>
     </Card>
@@ -751,10 +760,20 @@ function paxStatusClass(status: string): string {
     case "WL":
       return "bg-amber-500/15 text-amber-300";
     case "CAN":
+    // Waitlist that didn't clear at chart prep — auto-cancelled, refund pending.
+    case "AUTO_CANCELLED_CHART":
       return "bg-red-500/15 text-red-300";
     default:
       return "text-muted-foreground bg-white/10";
   }
+}
+
+// Display label for a passenger status (only the long chart-cancel code needs
+// shortening; the rest show as-is, e.g. CNF / RAC / WL).
+function paxStatusLabel(status: string): string {
+  return status?.toUpperCase() === "AUTO_CANCELLED_CHART"
+    ? "Cancelled at chart"
+    : status;
 }
 
 function titleCase(s: string): string {

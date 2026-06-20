@@ -31,6 +31,8 @@ const statusBadge: Record<string, string> = {
   RAC: "bg-orange-500/20 text-orange-400",
   CAN: "bg-red-500/20 text-red-400",
   CANCELLED: "bg-red-500/20 text-red-400",
+  // Waitlist that didn't clear when the chart was prepared.
+  AUTO_CANCELLED_CHART: "bg-red-500/20 text-red-400",
 };
 
 // ── Short code → human-readable label for passenger status ──
@@ -40,6 +42,7 @@ const passengerStatusLabel: Record<string, string> = {
   RAC: "RAC",
   CAN: "CANCELLED",
   CANCELLED: "CANCELLED",
+  AUTO_CANCELLED_CHART: "CANCELLED AT CHART",
 };
 
 const trainTypeBadge: Record<string, string> = {

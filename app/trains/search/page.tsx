@@ -7,6 +7,7 @@ import { useTrainSearch } from "@/hooks/useTrainSearch";
 import type { TrainClass, Train } from "@/lib/train";
 import {
   ArrowRight,
+  CalendarClock,
   MapPin,
   Sparkles,
   SlidersHorizontal,
@@ -137,15 +138,17 @@ export default function TrainSearchPage() {
   const to = searchParams.get("to");
   const cls = searchParams.get("class") ?? "SL";
   const quota = searchParams.get("quota") ?? "GN";
-  const hours = searchParams.get("hours");
-  const date = searchParams.get("date");
+  const date = searchParams.get("date") ?? format(new Date(), "yyyy-MM-dd");
   const nearby = searchParams.get("nearby") === "1";
+  const flexParam = Number(searchParams.get("flex")) || 0;
+  const flexible = flexParam >= 1;
+  const flexDays = Math.min(3, Math.max(1, flexParam || 1));
 
-  // Reset to page 1 whenever the search itself changes (route, window, nearby
-  // flag, page size) — otherwise we'd request page 3 of a brand-new search.
+  // Reset to page 1 whenever the search itself changes (route, date, nearby /
+  // flexible flags, page size) — otherwise we'd request page 3 of a new search.
   // Done during render (not an effect), per React's "adjust state on prop
   // change" guidance.
-  const searchKey = `${from}|${to}|${hours}|${nearby}|${pageSize}`;
+  const searchKey = `${from}|${to}|${date}|${nearby}|${flexParam}|${pageSize}`;
   const [prevSearchKey, setPrevSearchKey] = useState(searchKey);
   if (searchKey !== prevSearchKey) {
     setPrevSearchKey(searchKey);
@@ -156,12 +159,16 @@ export default function TrainSearchPage() {
     ? {
         fromStationCode: from,
         toStationCode: to ?? undefined,
-        hours: Number(hours) || 48,
+        journey_date: date,
         train_class: (cls as TrainClass) ?? undefined,
+        quota,
         // Nearby toggle drives both flags: on → include nearby stations.
         nearby_stations: nearby,
         exact_only: !nearby,
-        sort_by: "duration",
+        // Flexible dates → also search ±flex_days around the chosen date.
+        flexible_dates: flexible,
+        ...(flexible ? { flex_days: flexDays } : {}),
+        sort_by: "duration" as const,
         page,
         size: pageSize,
       }
@@ -197,16 +204,20 @@ export default function TrainSearchPage() {
       });
     }
 
-    if (sortBy === "departure") {
-      trains.sort((a, b) => a.departs.localeCompare(b.departs));
-    } else if (sortBy === "arrival") {
-      trains.sort((a, b) => a.arrives.localeCompare(b.arrives));
-    } else if (sortBy === "duration") {
-      trains.sort(
-        (a, b) =>
-          durationMinutes(a.departs, a.arrives) -
-          durationMinutes(b.departs, b.arrives)
-      );
+    // Flexible search returns trains in requested-date-first order (0, ±1, ±2…)
+    // — preserve it so the chosen date stays on top.
+    if (!flexible) {
+      if (sortBy === "departure") {
+        trains.sort((a, b) => a.departs.localeCompare(b.departs));
+      } else if (sortBy === "arrival") {
+        trains.sort((a, b) => a.arrives.localeCompare(b.arrives));
+      } else if (sortBy === "duration") {
+        trains.sort(
+          (a, b) =>
+            durationMinutes(a.departs, a.arrives) -
+            durationMinutes(b.departs, b.arrives)
+        );
+      }
     }
 
     return trains;
@@ -462,6 +473,7 @@ export default function TrainSearchPage() {
                 trainClass: cls,
                 quota,
                 nearby,
+                flex: flexible,
               }}
               onSubmitted={() => setModifyOpen(false)}
             />
@@ -525,7 +537,7 @@ export default function TrainSearchPage() {
           >
             {filteredTrains.map((train) => (
               <TrainCard
-                key={`${train.train_number}-${train.from_station}-${train.to_station}-${train.departs}`}
+                key={`${train.train_number}-${train.from_station}-${train.to_station}-${train.departs}-${train.journey_date ?? date}`}
                 train={train}
                 selectedClass={cls}
                 quota={quota}
@@ -725,13 +737,17 @@ function TrainCard({
     setExpanded(false);
   };
 
+  // For flexible-date results each entry is for its own date — carry that
+  // through to details / booking instead of the originally searched date.
+  const cardDate = train.journey_date ?? date;
+
   const goToDetails = () => {
     const qs = new URLSearchParams({
       from: train.from_station,
       to: train.to_station,
       class: selectedClass,
       quota,
-      ...(date ? { date } : {}),
+      ...(cardDate ? { date: cardDate } : {}),
     });
     router.push(`/trains/${train.train_number}?${qs.toString()}`);
   };
@@ -747,13 +763,22 @@ function TrainCard({
       class: classCode,
       quota,
       ...(train.train_type ? { type: train.train_type } : {}),
-      ...(date ? { date } : {}),
+      ...(cardDate ? { date: cardDate } : {}),
     });
     router.push(`/book/passengers?${qs.toString()}`);
   };
 
   const badgeClass =
     trainTypeBadge[train.train_type] ?? "bg-gray-500/20 text-gray-400";
+
+  // Flexible-date badge: only when this entry is a neighbour day.
+  const offset = train.date_offset_days;
+  const flexBadge =
+    offset != null && offset !== 0 && train.journey_date
+      ? `${formatDateLabel(train.journey_date)} · ${
+          offset > 0 ? "+" : "−"
+        }${Math.abs(offset)} day${Math.abs(offset) > 1 ? "s" : ""}`
+      : null;
 
   const daysLabel =
     train.runs_on_days?.length === 7
@@ -797,6 +822,12 @@ function TrainCard({
               <span className="inline-flex items-center gap-1 rounded-md bg-[#E8AA4D]/15 px-2 py-0.5 text-[11px] font-medium text-[#E8AA4D]">
                 <MapPin className="h-3 w-3" />
                 Nearby
+              </span>
+            )}
+            {flexBadge && (
+              <span className="inline-flex items-center gap-1 rounded-md bg-[#E8AA4D]/15 px-2 py-0.5 text-[11px] font-medium text-[#E8AA4D]">
+                <CalendarClock className="h-3 w-3" />
+                {flexBadge}
               </span>
             )}
           </div>
