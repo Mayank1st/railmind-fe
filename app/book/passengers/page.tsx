@@ -19,6 +19,7 @@ import { usePassengers } from "@/hooks/usePassengers";
 import { useCreatePassenger } from "@/hooks/useCreatePassenger";
 import { useFarePreview } from "@/hooks/useFarePreview";
 import { inr } from "@/lib/fare";
+import { normalizeIdNumber } from "@/lib/document";
 import { MobileActionBar } from "@/components/booking/mobile-action-bar";
 import {
   draftToPayload,
@@ -258,7 +259,7 @@ export default function BookingPassengersPage() {
       age: Number(draft.age),
       gender: draft.gender,
       id_type: draft.id_type,
-      id_number: draft.id_number.trim(),
+      id_number: normalizeIdNumber(draft.id_number),
       berth_preference: draft.berth_preference,
       is_primary: false,
     };

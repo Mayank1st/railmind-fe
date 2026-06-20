@@ -16,7 +16,9 @@ export type User = {
 export type LoginPasswordPayload = {
   email: string;
   password: string;
-  remember?: boolean;
+  // Backend field (snake_case): extends the session lifetime when the user
+  // ticks "Remember me". Defaults to false server-side.
+  remember_me?: boolean;
 };
 
 export type LoginOtpRequestPayload = { email: string };
@@ -65,8 +67,11 @@ export const authApi = {
   // Exchange a Google ID token (the GIS `credential`) for a backend session.
   // The cookies are set by the backend on this response (withCredentials is on
   // the axios instance); we only read `data` to decide where to route next.
-  google: (idToken: string): Promise<GoogleAuthResult> =>
-    api.post("/auth/google", { id_token: idToken }).then((r) => r.data.data),
+  // `rememberMe` mirrors the "Remember me" tick — sent as snake_case to the BE.
+  google: (idToken: string, rememberMe = false): Promise<GoogleAuthResult> =>
+    api
+      .post("/auth/google", { id_token: idToken, remember_me: rememberMe })
+      .then((r) => r.data.data),
 
   logout: () => api.post("/auth/logout").then((r) => r.data),
 };

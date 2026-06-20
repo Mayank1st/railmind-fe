@@ -42,6 +42,7 @@ export default function LoginPage() {
 
   const [loginMode, setLoginMode] = useState<"password" | "otp">("password");
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   // Highlight the Google button when a Google-only user tries password login.
@@ -62,7 +63,10 @@ export default function LoginPage() {
     setHighlightGoogle(false);
     setIsSubmitting(true);
     try {
-      const user = await authApi.loginPassword(data);
+      const user = await authApi.loginPassword({
+        ...data,
+        remember_me: rememberMe,
+      });
       setUser(user);
       router.replace(nextPath);
       router.refresh();
@@ -190,6 +194,7 @@ export default function LoginPage() {
               next={nextPath}
               onError={setSubmitError}
               highlight={highlightGoogle}
+              rememberMe={rememberMe}
             />
 
             {/* Divider */}
@@ -291,7 +296,13 @@ export default function LoginPage() {
                   {/* Remember me + Forgot */}
                   <div className="flex items-center justify-between">
                     <label className="text-foreground/50 flex cursor-pointer items-center gap-2 text-sm">
-                      <Checkbox className="data-[state=checked]:!border-accent-warm data-[state=checked]:!bg-accent-warm cursor-pointer !border-white/30 !bg-white" />
+                      <Checkbox
+                        checked={rememberMe}
+                        onCheckedChange={(checked) =>
+                          setRememberMe(checked === true)
+                        }
+                        className="data-[state=checked]:!border-accent-warm data-[state=checked]:!bg-accent-warm cursor-pointer !border-white/30 !bg-white"
+                      />
                       Remember me
                     </label>
                     <Link
