@@ -81,12 +81,15 @@ type GoogleSignInButtonProps = {
   onError?: (message: string) => void;
   /** Draw attention to the button (e.g. after a RM-AUTH-018 password error). */
   highlight?: boolean;
+  /** Mirrors the page's "Remember me" tick — forwarded to the backend. */
+  rememberMe?: boolean;
 };
 
 export function GoogleSignInButton({
   next = "/",
   onError,
   highlight = false,
+  rememberMe = false,
 }: GoogleSignInButtonProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
@@ -104,9 +107,11 @@ export function GoogleSignInButton({
   // Keep latest props in refs so we don't re-initialise GIS on every change.
   const nextRef = useRef(next);
   const onErrorRef = useRef(onError);
+  const rememberMeRef = useRef(rememberMe);
   useEffect(() => {
     nextRef.current = next;
     onErrorRef.current = onError;
+    rememberMeRef.current = rememberMe;
   });
 
   const handleCredential = useCallback(
@@ -119,7 +124,10 @@ export function GoogleSignInButton({
 
       setLoading(true);
       try {
-        const result: GoogleAuthResult = await authApi.google(credential);
+        const result: GoogleAuthResult = await authApi.google(
+          credential,
+          rememberMeRef.current
+        );
 
         // The session cookies are now set. Pull the canonical profile so we can
         // (a) seed the auth store and (b) route off REAL profile completeness,

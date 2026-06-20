@@ -7,6 +7,13 @@ import {
   ID_TYPE_OPTIONS,
   type CreatePassengerPayload,
 } from "@/lib/passengers";
+import {
+  idNumberHint,
+  idNumberMaxLength,
+  isIdNumberValid,
+  normalizeIdNumber,
+  validateIdNumber,
+} from "@/lib/document";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -40,7 +47,8 @@ export function isDraftValid(d: PassengerDraft) {
     d.full_name.trim().length > 1 &&
     Number(d.age) > 0 &&
     Boolean(d.gender) &&
-    d.id_number.trim().length > 3
+    // Per-document format + length check (Aadhaar 12 digits, PAN AAAAA9999A, …).
+    isIdNumberValid(d.id_type, d.id_number)
   );
 }
 
@@ -53,7 +61,8 @@ export function draftToPayload(
     age: Number(d.age),
     gender: d.gender,
     id_type: d.id_type,
-    id_number: d.id_number.trim(),
+    // Store the canonical form (uppercased, no separators).
+    id_number: normalizeIdNumber(d.id_number),
     berth_preference: d.berth_preference,
     is_primary: isPrimary,
   };
@@ -72,6 +81,12 @@ export function PassengerFields({
   draft: PassengerDraft;
   onChange: (patch: Partial<PassengerDraft>) => void;
 }) {
+  // Only surface the format error once the user has typed something — don't
+  // shout "required" on a pristine field.
+  const idError = draft.id_number.trim()
+    ? validateIdNumber(draft.id_type, draft.id_number)
+    : null;
+
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
       <FieldShell label="Full name" className="sm:col-span-2">
@@ -133,10 +148,17 @@ export function PassengerFields({
       <FieldShell label="ID number">
         <Input
           value={draft.id_number}
-          onChange={(e) => onChange({ id_number: e.target.value })}
-          placeholder="ID number"
+          onChange={(e) =>
+            onChange({ id_number: e.target.value.toUpperCase() })
+          }
+          placeholder={idNumberHint(draft.id_type)}
+          maxLength={idNumberMaxLength(draft.id_type)}
+          inputMode={draft.id_type === "AADHAAR" ? "numeric" : "text"}
+          autoCapitalize="characters"
           className={FIELD}
+          aria-invalid={Boolean(idError)}
         />
+        {idError && <p className="text-xs text-red-400">{idError}</p>}
       </FieldShell>
 
       <FieldShell label="Default berth" className="sm:col-span-2">
