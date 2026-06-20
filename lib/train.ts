@@ -40,19 +40,29 @@ export type Train = {
   // false when the train is matched via a nearby station rather than the exact
   // searched station (only present when exact_only=false / nearby search).
   is_exact_match?: boolean;
+  // ── Flexible dates ── the actual date this entry is for, its offset from the
+  // requested date (0 = chosen date), and whether it IS the requested date.
+  journey_date?: string;
+  date_offset_days?: number;
+  is_requested_date?: boolean;
 };
 
 export type TrainSearchPayload = {
   fromStationCode: string;
   toStationCode?: string;
-  hours?: number;
+  // Required: the search is now date-aware (replaces the old `hours` window).
+  journey_date: string; // YYYY-MM-DD, today … today+120 days
   train_class?: TrainClass;
-  journey_date?: string;
+  quota?: string;
+  train_type?: string;
   // exact_only=true → only the searched station; false → also include nearby
   // stations (the "Nearby stations" toggle drives these two together).
   nearby_stations?: boolean;
   exact_only?: boolean;
-  sort_by?: string;
+  // Flexible dates — also search ±flex_days around journey_date (flex_days 1–3).
+  flexible_dates?: boolean;
+  flex_days?: number;
+  sort_by?: "departure" | "duration";
   page?: number;
   size?: number;
 };
@@ -62,9 +72,10 @@ export type TrainSearchMeta = {
   page: number;
   size: number;
   pages: number;
-  from_time: string;
-  to_time: string;
+  journey_date: string;
   nearby_stations: boolean;
+  flexible_dates?: boolean;
+  flex_days?: number;
 };
 
 // The API now returns the list in `data` and pagination/flags in `meta`; we
