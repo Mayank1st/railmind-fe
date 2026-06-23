@@ -48,6 +48,7 @@ export type SearchFormDefaults = {
   quota?: string;
   nearby?: boolean;
   flex?: boolean;
+  mode?: "normal" | "smart";
 };
 
 type SearchFormProps = {
@@ -74,6 +75,12 @@ export default function SearchForm({
   const [nearbyStations, setNearbyStations] = useState(
     defaults?.nearby ?? false
   );
+  // Normal: pick everything (incl. class/quota). Smart: pick only route + date —
+  // class/quota/passengers are auto-filled after the user chooses a train.
+  const [mode, setMode] = useState<"normal" | "smart">(
+    defaults?.mode ?? "normal"
+  );
+  const smart = mode === "smart";
 
   const authed = useAuthStore((s) => s.status) === "authed";
 
@@ -111,10 +118,17 @@ export default function SearchForm({
     const params = new URLSearchParams({
       from: fromCode,
       to: toCode,
-      class: trainClass,
-      quota: quota,
       date: journeyDate,
     });
+
+    // Smart mode carries no class/quota — the booking flow resolves them. Normal
+    // mode passes the user's explicit class/quota choice through, as before.
+    if (smart) {
+      params.set("mode", "smart");
+    } else {
+      params.set("class", trainClass);
+      params.set("quota", quota);
+    }
 
     // "Nearby stations" ON → search also covers nearby stations (exact_only=false).
     if (nearbyStations) {
@@ -149,6 +163,41 @@ export default function SearchForm({
         className ?? "mt-12 rounded-2xl border border-white/10 bg-[#121713] p-6"
       }
     >
+      {/* Mode toggle — Normal vs Smart booking */}
+      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="inline-flex w-fit rounded-full border border-white/10 bg-[#1a1a18] p-1">
+          <button
+            type="button"
+            onClick={() => setMode("normal")}
+            className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+              !smart
+                ? "bg-[#2a2a28] text-white"
+                : "cursor-pointer text-white/50 hover:text-white/80"
+            }`}
+          >
+            Normal
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode("smart")}
+            className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+              smart
+                ? "bg-accent-warm text-[#1a1a18]"
+                : "cursor-pointer text-white/50 hover:text-white/80"
+            }`}
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            Smart booking
+          </button>
+        </div>
+        {smart && (
+          <p className="text-xs text-white/40 sm:max-w-sm sm:text-right">
+            Just pick route &amp; date — we&apos;ll auto-fill class, quota,
+            passengers &amp; berths from your history when you choose a train.
+          </p>
+        )}
+      </div>
+
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
         {/* FROM */}
         <StationInput
@@ -229,51 +278,63 @@ export default function SearchForm({
             </Popover>
           </div>
 
-          {/* CLASS */}
-          <div className="lg:w-36">
-            <label className="mb-2 block text-xs font-medium tracking-wider text-white/40 uppercase">
-              Class
-            </label>
-            <Select value={trainClass} onValueChange={setTrainClass}>
-              <SelectTrigger className="text-foreground !h-auto w-full cursor-pointer rounded-lg border-0 bg-[#2a2a28] px-4 py-3 text-sm [&>svg]:opacity-100">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent
-                position="popper"
-                sideOffset={2}
-                className="border-white/10 bg-[#2a2a28] [&_[data-slot=select-item]]:cursor-pointer"
-              >
-                <SelectItem value="SL">SL</SelectItem>
-                <SelectItem value="3A">3A</SelectItem>
-                <SelectItem value="2A">2A</SelectItem>
-                <SelectItem value="1A">1A</SelectItem>
-                <SelectItem value="CC">CC</SelectItem>
-                <SelectItem value="2S">2S</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          {smart ? (
+            /* Smart mode: class & quota are auto-picked at booking */
+            <div className="border-accent-warm/30 bg-accent-warm/10 col-span-2 flex items-center gap-2 self-stretch rounded-lg border px-4 py-3 lg:self-auto">
+              <Sparkles className="text-accent-warm h-4 w-4 shrink-0" />
+              <span className="text-sm text-white/70">
+                Class &amp; quota auto-picked
+              </span>
+            </div>
+          ) : (
+            <>
+              {/* CLASS */}
+              <div className="lg:w-36">
+                <label className="mb-2 block text-xs font-medium tracking-wider text-white/40 uppercase">
+                  Class
+                </label>
+                <Select value={trainClass} onValueChange={setTrainClass}>
+                  <SelectTrigger className="text-foreground !h-auto w-full cursor-pointer rounded-lg border-0 bg-[#2a2a28] px-4 py-3 text-sm [&>svg]:opacity-100">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent
+                    position="popper"
+                    sideOffset={2}
+                    className="border-white/10 bg-[#2a2a28] [&_[data-slot=select-item]]:cursor-pointer"
+                  >
+                    <SelectItem value="SL">SL</SelectItem>
+                    <SelectItem value="3A">3A</SelectItem>
+                    <SelectItem value="2A">2A</SelectItem>
+                    <SelectItem value="1A">1A</SelectItem>
+                    <SelectItem value="CC">CC</SelectItem>
+                    <SelectItem value="2S">2S</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-          {/* QUOTA */}
-          <div className="lg:w-40">
-            <label className="mb-2 block text-xs font-medium tracking-wider text-white/40 uppercase">
-              Quota
-            </label>
-            <Select value={quota} onValueChange={setQuota}>
-              <SelectTrigger className="text-foreground !h-auto w-full cursor-pointer rounded-lg border-0 bg-[#2a2a28] px-4 py-3 text-sm [&>svg]:opacity-100">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent
-                position="popper"
-                sideOffset={2}
-                className="border-white/10 bg-[#2a2a28] [&_[data-slot=select-item]]:cursor-pointer"
-              >
-                <SelectItem value="GN">General</SelectItem>
-                <SelectItem value="TQ">Tatkal</SelectItem>
-                <SelectItem value="PT">Premium Tatkal</SelectItem>
-                <SelectItem value="LD">Ladies</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+              {/* QUOTA */}
+              <div className="lg:w-40">
+                <label className="mb-2 block text-xs font-medium tracking-wider text-white/40 uppercase">
+                  Quota
+                </label>
+                <Select value={quota} onValueChange={setQuota}>
+                  <SelectTrigger className="text-foreground !h-auto w-full cursor-pointer rounded-lg border-0 bg-[#2a2a28] px-4 py-3 text-sm [&>svg]:opacity-100">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent
+                    position="popper"
+                    sideOffset={2}
+                    className="border-white/10 bg-[#2a2a28] [&_[data-slot=select-item]]:cursor-pointer"
+                  >
+                    <SelectItem value="GN">General</SelectItem>
+                    <SelectItem value="TQ">Tatkal</SelectItem>
+                    <SelectItem value="PT">Premium Tatkal</SelectItem>
+                    <SelectItem value="LD">Ladies</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </>
+          )}
 
           {/* SEARCH BUTTON */}
           <button

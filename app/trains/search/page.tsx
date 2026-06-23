@@ -42,7 +42,9 @@ import {
 } from "@/components/ui/pagination";
 import { useSeatAvailability } from "@/hooks/useSeatAvailability";
 import { useAuthStore } from "@/store/auth";
+import { useSmartAutofill } from "@/hooks/useSmartAutofill";
 import SearchForm from "@/components/train/SearchForm";
+import { FavouriteTrainHint } from "@/components/train/FavouriteTrainHint";
 
 // ── Train type badge colors ──
 const trainTypeBadge: Record<string, string> = {
@@ -126,6 +128,8 @@ function toggleFilter(
 
 export default function TrainSearchPage() {
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const authStatus = useAuthStore((s) => s.status);
   const [modifyOpen, setModifyOpen] = useState(false);
   const [sortBy, setSortBy] = useState("departure");
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
@@ -140,6 +144,9 @@ export default function TrainSearchPage() {
   const quota = searchParams.get("quota") ?? "GN";
   const date = searchParams.get("date") ?? format(new Date(), "yyyy-MM-dd");
   const nearby = searchParams.get("nearby") === "1";
+  // Smart booking: user picked only route + date; tapping a train jumps straight
+  // to a fully auto-filled booking (class/quota/passengers/berths resolved there).
+  const smartMode = searchParams.get("mode") === "smart";
   const flexParam = Number(searchParams.get("flex")) || 0;
   const flexible = flexParam >= 1;
   const flexDays = Math.min(3, Math.max(1, flexParam || 1));
@@ -176,6 +183,55 @@ export default function TrainSearchPage() {
 
   const { data, isLoading, error, isPlaceholderData } = useTrainSearch(payload);
   const meta = data?.meta;
+
+  // "Your usual train" — route-level favourite from booking history. Call the
+  // autofill endpoint with route only (no train_number) so it returns just the
+  // favourite_train block. Auth-only; guests simply don't see the hint.
+  const favAutofill = useSmartAutofill(
+    {
+      source_station_code: from ?? "",
+      destination_station_code: to ?? "",
+      journey_date: date,
+    },
+    authStatus === "authed" && Boolean(from && to)
+  );
+  const favouriteTrain = favAutofill.data?.suggestion?.favourite_train ?? null;
+  // The favourite is just a number/name; grab the full Train from the current
+  // results (when present) to carry timings/type into the booking.
+  const favouriteMatch = data?.trains?.find(
+    (t) => t.train_number === favouriteTrain?.train_number
+  );
+
+  // One-tap pick of the favourite. Mirrors a normal card tap: smart mode jumps to
+  // the auto-filled booking; normal mode opens the train's details to book.
+  function pickFavourite() {
+    if (!favouriteTrain) return;
+    const num = favouriteTrain.train_number;
+    if (smartMode) {
+      const t = favouriteMatch;
+      const qs = new URLSearchParams({
+        train: num,
+        name: favouriteTrain.train_name,
+        from: from ?? "",
+        to: to ?? "",
+        ...(t?.departs ? { dep: t.departs } : {}),
+        ...(t?.arrives ? { arr: t.arrives } : {}),
+        smart: "1",
+        ...(t?.train_type ? { type: t.train_type } : {}),
+        ...(date ? { date } : {}),
+      });
+      router.push(`/book/passengers?${qs.toString()}`);
+    } else {
+      const qs = new URLSearchParams({
+        from: from ?? "",
+        to: to ?? "",
+        class: cls,
+        quota,
+        ...(date ? { date } : {}),
+      });
+      router.push(`/trains/${num}?${qs.toString()}`);
+    }
+  }
 
   // ── Client-side filter + sort ──
   const filteredTrains = (() => {
@@ -474,6 +530,7 @@ export default function TrainSearchPage() {
                 quota,
                 nearby,
                 flex: flexible,
+                mode: smartMode ? "smart" : "normal",
               }}
               onSubmitted={() => setModifyOpen(false)}
             />
@@ -515,6 +572,15 @@ export default function TrainSearchPage() {
             </Select>
           </div>
 
+          {/* Your usual train on this route (personalised quick-pick) */}
+          {favouriteTrain && (
+            <FavouriteTrainHint
+              favourite={favouriteTrain}
+              smartMode={smartMode}
+              onPick={pickFavourite}
+            />
+          )}
+
           {/* Smart Pick */}
           {filteredTrains.length > 0 && (
             <div className="border-accent-warm/20 bg-accent-warm/5 mb-6 flex items-start gap-3 rounded-xl border px-5 py-4">
@@ -542,6 +608,7 @@ export default function TrainSearchPage() {
                 selectedClass={cls}
                 quota={quota}
                 date={date}
+                isSmart={smartMode}
               />
             ))}
 
@@ -699,11 +766,13 @@ function TrainCard({
   selectedClass,
   quota,
   date,
+  isSmart,
 }: {
   train: Train;
   selectedClass: string;
   quota: string;
   date: string | null;
+  isSmart: boolean;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -762,6 +831,26 @@ function TrainCard({
       arr: train.arrives ?? "",
       class: classCode,
       quota,
+      ...(train.train_type ? { type: train.train_type } : {}),
+      ...(cardDate ? { date: cardDate } : {}),
+    });
+    router.push(`/book/passengers?${qs.toString()}`);
+  };
+
+  // Smart booking: skip the class/availability step entirely. We pass smart=1 and
+  // NO class/quota — the booking page resolves class, quota, passengers & berths
+  // from the smart-autofill model. (Guests get bounced to login by middleware and
+  // land back here afterwards, since /book is protected.)
+  const goToSmartBooking = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const qs = new URLSearchParams({
+      train: train.train_number,
+      name: train.train_name,
+      from: train.from_station,
+      to: train.to_station,
+      dep: train.departs ?? "",
+      arr: train.arrives ?? "",
+      smart: "1",
       ...(train.train_type ? { type: train.train_type } : {}),
       ...(cardDate ? { date: cardDate } : {}),
     });
@@ -881,8 +970,17 @@ function TrainCard({
           </div>
         </div>
 
-        {/* Row 3 — Check Availability / Seat Info */}
-        {!expanded ? (
+        {/* Row 3 — Smart book (smart mode) / Check Availability / Seat Info */}
+        {isSmart ? (
+          <button
+            onClick={goToSmartBooking}
+            className="bg-accent-warm mt-5 flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg py-3 text-sm font-medium text-[#1a1a18] hover:opacity-90"
+          >
+            <Sparkles className="h-4 w-4" />
+            Smart book — auto-fill class, quota &amp; passengers
+            <ArrowRight className="h-4 w-4" />
+          </button>
+        ) : !expanded ? (
           <button
             onClick={handleCheckAvailability}
             className="text-foreground/60 mt-5 flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-white/10 py-3 text-sm hover:bg-white/5"

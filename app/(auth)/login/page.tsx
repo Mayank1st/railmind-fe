@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -39,6 +39,7 @@ export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const setUser = useAuthStore((s) => s.setUser);
+  const authStatus = useAuthStore((s) => s.status);
 
   const [loginMode, setLoginMode] = useState<"password" | "otp">("password");
   const [showPassword, setShowPassword] = useState(false);
@@ -57,6 +58,15 @@ export default function LoginPage() {
   });
 
   const nextPath = searchParams.get("next") ?? "/";
+
+  // Already signed in (status validated via /auth/me, not just a cookie) → skip
+  // the login page. Middleware can't do this reliably because the auth cookie is
+  // httpOnly, so a stale cookie would loop the user back here forever.
+  useEffect(() => {
+    if (authStatus === "authed") {
+      router.replace(nextPath);
+    }
+  }, [authStatus, nextPath, router]);
 
   const onPasswordSubmit = async (data: PasswordFormData) => {
     setSubmitError(null);
