@@ -3,7 +3,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { format, isValid, parseISO } from "date-fns";
-import { ArrowRight, Loader2, Pencil, Plus, Sparkles, X } from "lucide-react";
+import {
+  ArrowRight,
+  Info,
+  Loader2,
+  Pencil,
+  Plus,
+  Sparkles,
+  X,
+} from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/auth";
@@ -18,6 +26,7 @@ import { useBookingStore } from "@/store/booking";
 import { usePassengers } from "@/hooks/usePassengers";
 import { useCreatePassenger } from "@/hooks/useCreatePassenger";
 import { useFarePreview } from "@/hooks/useFarePreview";
+import { useSmartAutofill } from "@/hooks/useSmartAutofill";
 import { inr } from "@/lib/fare";
 import { normalizeIdNumber } from "@/lib/document";
 import { MobileActionBar } from "@/components/booking/mobile-action-bar";
@@ -43,6 +52,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
+const CLASS_LABEL: Record<string, string> = {
+  SL: "Sleeper",
+  "3A": "AC 3 Tier",
+  "2A": "AC 2 Tier",
+  "1A": "AC First Class",
+  CC: "AC Chair Car",
+  "2S": "Second Sitting",
+  FC: "First Class",
+  "3E": "AC 3 Economy",
+};
 
 const QUOTA_LABEL: Record<string, string> = {
   GN: "General",
@@ -72,6 +92,7 @@ export default function BookingPassengersPage() {
   const router = useRouter();
   const sp = useSearchParams();
   const user = useAuthStore((s) => s.user);
+  const authStatus = useAuthStore((s) => s.status);
 
   const train = sp.get("train") ?? "—";
   const name = sp.get("name") ?? "Train";
@@ -80,9 +101,21 @@ export default function BookingPassengersPage() {
   const dep = sp.get("dep")?.slice(0, 5) ?? "";
   const arr = sp.get("arr")?.slice(0, 5) ?? "";
   const dateRaw = sp.get("date");
-  const cls = sp.get("class") ?? "SL";
-  const quota = sp.get("quota") ?? "GN";
   const trainType = sp.get("type") ?? "";
+
+  // Smart booking (smart=1): the user only chose train + route + date, so class
+  // & quota aren't in the URL — we resolve them here from the smart-autofill
+  // suggestion. Normal booking carries class/quota from the search step as URL
+  // params, exactly as before. Until a smart booking resolves, `classResolved`
+  // is false: we show a pending state and block "Continue".
+  const smart = sp.get("smart") === "1";
+  const urlCls = sp.get("class");
+  const urlQuota = sp.get("quota");
+  const [smartCls, setSmartCls] = useState<string | null>(null);
+  const [smartQuota, setSmartQuota] = useState<string | null>(null);
+  const cls = urlCls ?? smartCls ?? "SL";
+  const quota = urlQuota ?? smartQuota ?? "GN";
+  const classResolved = !smart || urlCls !== null || smartCls !== null;
 
   const dateLabel = useMemo(() => {
     if (!dateRaw) return "—";
@@ -126,6 +159,26 @@ export default function BookingPassengersPage() {
     };
   });
 
+  // Smart autofill is auth-only (cookie session) and pre-fills from the user's
+  // booking history. Gate it: a logged-in user opening a fresh form for a
+  // resolved route. When we restored a previous selection from the store
+  // (seed.hydrated) there's nothing to autofill.
+  const autofillEnabled =
+    authStatus === "authed" &&
+    !seed.hydrated &&
+    train !== "—" &&
+    Boolean(from) &&
+    Boolean(to);
+  const autofill = useSmartAutofill(
+    {
+      train_number: train,
+      source_station_code: from,
+      destination_station_code: to,
+      journey_date: dateRaw ?? undefined,
+    },
+    autofillEnabled
+  );
+
   // Passengers added with "Skip saving" live only in this booking session.
   const [localPassengers, setLocalPassengers] = useState<Passenger[]>(
     seed.local
@@ -151,15 +204,73 @@ export default function BookingPassengersPage() {
     setEditOpen(true);
   }
 
-  // Pre-select the primary passenger once saved data arrives — unless we
-  // restored a previous selection from the store. Adjusting state during render
-  // (vs. in an effect) is React's recommended pattern for deriving from data
-  // that just loaded, and avoids a cascading-render lint error.
-  const [autoSelected, setAutoSelected] = useState(seed.hydrated);
-  if (!autoSelected && saved.length) {
-    setAutoSelected(true);
-    const primary = saved.find((p) => p.is_primary);
-    if (primary) setSelected(new Set([primary.id]));
+  // One-time prefill: apply Smart Autofill (or fall back to pre-selecting the
+  // primary passenger) once the saved list AND the autofill response have both
+  // settled. Adjusting state during render — vs. in an effect — is React's
+  // recommended pattern for deriving from data that just loaded, and avoids both
+  // a cascading-render lint error and a post-paint flicker.
+  // `smartIds` = passengers we pre-selected from history (drives the "Smart"
+  // badge); `softBerths` = berths suggested below the confidence threshold (the
+  // user should confirm them).
+  const [prefilled, setPrefilled] = useState(seed.hydrated);
+  const [smartIds, setSmartIds] = useState<Set<string>>(new Set());
+  const [softBerths, setSoftBerths] = useState<Set<string>>(new Set());
+
+  if (
+    !prefilled &&
+    !passengersLoading &&
+    (!autofillEnabled || autofill.isFetched)
+  ) {
+    setPrefilled(true);
+    const result = autofillEnabled ? autofill.data : null;
+    const suggestion = result?.suggestion ?? null;
+    const threshold = result?.threshold ?? 0.75;
+    const savedIds = new Set(saved.map((p) => p.id));
+
+    // Smart booking: adopt the suggested class & quota (the whole point — the
+    // user didn't pick them). Fall back to sensible defaults if there's no
+    // signal. In normal mode we leave the user's chosen class/quota untouched.
+    if (smart) {
+      setSmartCls(suggestion?.train_class.value ?? "SL");
+      setSmartQuota(suggestion?.quota.value ?? "GN");
+    }
+
+    // Pre-select the suggested passengers we actually have saved (most-frequent
+    // first, capped at maxPax) and carry over their berth preference.
+    const pick = new Set<string>();
+    const berths: Record<string, string> = {};
+    const soft = new Set<string>();
+    if (suggestion?.passengers.length) {
+      for (const ps of suggestion.passengers) {
+        if (!savedIds.has(ps.passenger_id) || pick.size >= maxPax) continue;
+        pick.add(ps.passenger_id);
+        if (ps.berth.value) {
+          berths[ps.passenger_id] = ps.berth.value;
+          // > 0 but below threshold → soft suggestion the user should confirm.
+          if (ps.berth.confidence > 0 && ps.berth.confidence < threshold) {
+            soft.add(ps.passenger_id);
+          }
+        }
+      }
+    }
+
+    if (pick.size) {
+      setSelected(pick);
+      if (Object.keys(berths).length) {
+        setBerth((b) => ({ ...b, ...berths }));
+      }
+      // DEFAULTS = cold-start with no real signal → fill silently, no "smart"
+      // badge. MODEL / HISTORY are genuine suggestions worth surfacing.
+      if (suggestion && suggestion.source !== "DEFAULTS") {
+        setSmartIds(pick);
+        setSoftBerths(soft);
+      }
+    } else {
+      // No usable suggestion (guest, error, empty, or none saved) → keep the
+      // previous behaviour of pre-selecting the primary passenger.
+      const primary = saved.find((p) => p.is_primary);
+      if (primary) setSelected(new Set([primary.id]));
+    }
   }
 
   // Keep the booking store in sync so the stepper can move forward with the
@@ -218,7 +329,7 @@ export default function BookingPassengersPage() {
       passenger_count: count,
       train_type: trainType,
     },
-    Boolean(train && from && to && dateRaw) && count > 0
+    Boolean(train && from && to && dateRaw) && count > 0 && classResolved
   );
   const fareTotal = farePreview.data?.total_fare ?? null;
   const fareLoading = count > 0 && farePreview.isLoading;
@@ -286,6 +397,20 @@ export default function BookingPassengersPage() {
     router.push(`/book/review?${qs.toString()}`);
   }
 
+  // Read-only context (§4): the model may suggest a different class for this
+  // route. Class/quota are fixed URL params chosen at search, so we DON'T change
+  // the selection — just show a non-blocking nudge. (When class/quota become
+  // suggestible at the search step, the same train_class field + confidence rule
+  // applies there — no API change needed.)
+  const suggestedClass =
+    autofillEnabled && !smart ? autofill.data?.suggestion?.train_class : null;
+  const classNudge =
+    suggestedClass?.value &&
+    suggestedClass.value !== cls &&
+    suggestedClass.confidence > 0
+      ? (CLASS_LABEL[suggestedClass.value] ?? suggestedClass.value)
+      : null;
+
   return (
     <div className="app-container-narrow pt-8 pb-28 lg:pb-8">
       {/* Journey summary bar */}
@@ -298,8 +423,20 @@ export default function BookingPassengersPage() {
             {arr}
           </span>
         </div>
-        <span className="text-muted-foreground">
-          {dateLabel} · {cls} · {quotaLabel} · {count} pax
+        <span className="text-muted-foreground inline-flex flex-wrap items-center gap-1.5">
+          <span>{dateLabel} ·</span>
+          {classResolved ? (
+            <span className="inline-flex items-center gap-1">
+              {smart && <Sparkles className="h-3.5 w-3.5 text-[#E8AA4D]" />}
+              {cls} · {quotaLabel}
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 text-[#E8AA4D]">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              Smart-selecting class &amp; quota…
+            </span>
+          )}
+          <span>· {count} pax</span>
         </span>
       </div>
 
@@ -320,6 +457,22 @@ export default function BookingPassengersPage() {
             {isTatkal ? " Tatkal allows max 4." : " Tatkal allows max 4."}
           </p>
 
+          {/* Read-only class nudge — informational, never auto-changes the class */}
+          {classNudge && (
+            <div className="text-muted-foreground mt-3 flex items-start gap-2 text-xs">
+              <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#E8AA4D]/80" />
+              <p>
+                You usually book{" "}
+                <span className="font-medium text-white/80">{classNudge}</span>{" "}
+                on this route. We&apos;ve kept your{" "}
+                <span className="font-medium text-white/80">
+                  {CLASS_LABEL[cls] ?? cls}
+                </span>{" "}
+                selection — change it from search if you&apos;d prefer.
+              </p>
+            </div>
+          )}
+
           {/* Tip banner */}
           <div className="mt-6 flex items-start gap-3 rounded-2xl border border-[#E8AA4D]/25 bg-gradient-to-r from-[#3a2a12] to-[#241a0c] px-5 py-4 text-sm">
             <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[#E8AA4D]" />
@@ -331,6 +484,28 @@ export default function BookingPassengersPage() {
               preference if available.
             </p>
           </div>
+
+          {/* Smart autofill status */}
+          {autofillEnabled && autofill.isLoading && (
+            <div className="text-muted-foreground mt-4 flex items-center gap-2 text-xs">
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-[#E8AA4D]" />
+              Personalising this form from your booking history…
+            </div>
+          )}
+          {smartIds.size > 0 && (
+            <div className="mt-4 flex items-start gap-3 rounded-2xl border border-[#E8AA4D]/30 bg-[#E8AA4D]/[0.06] px-5 py-4 text-sm">
+              <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[#E8AA4D]" />
+              <p className="text-white/80">
+                <span className="font-semibold text-[#F0BF6A]">
+                  Smart autofill:
+                </span>{" "}
+                we pre-selected {smartIds.size} passenger
+                {smartIds.size === 1 ? "" : "s"}
+                {softBerths.size > 0 ? " and berth preferences" : ""} from your
+                past bookings. Review and adjust anything before continuing.
+              </p>
+            </div>
+          )}
 
           {/* Saved passengers */}
           <Card className="bg-card/40 mt-6 border-white/8 py-0 shadow-none">
@@ -379,10 +554,21 @@ export default function BookingPassengersPage() {
                                 {tag}
                               </Badge>
                             )}
+                            {smartIds.has(p.id) && (
+                              <Badge className="h-5 gap-1 bg-[#E8AA4D]/15 px-2 text-[10px] font-semibold tracking-wide text-[#E8AA4D]">
+                                <Sparkles className="h-3 w-3" />
+                                Smart
+                              </Badge>
+                            )}
                           </div>
                           <p className="text-muted-foreground mt-0.5 text-xs">
                             {passengerDoc(p) || "No ID on file"}
                           </p>
+                          {isSelected && softBerths.has(p.id) && (
+                            <p className="mt-0.5 text-[11px] text-[#E8AA4D]/80">
+                              Suggested berth — confirm or change
+                            </p>
+                          )}
                         </div>
 
                         {isSelected ? (
@@ -505,7 +691,11 @@ export default function BookingPassengersPage() {
                 <SummaryRow label="Date" value={dateLabel} />
                 <SummaryRow
                   label="Class · Quota"
-                  value={`${cls} · ${quotaLabel}`}
+                  value={
+                    classResolved
+                      ? `${smart ? "✨ " : ""}${cls} · ${quotaLabel}`
+                      : "Smart-selecting…"
+                  }
                 />
                 <SummaryRow label="Passengers" value={`${count} / ${maxPax}`} />
               </dl>
@@ -527,7 +717,7 @@ export default function BookingPassengersPage() {
 
               <Button
                 onClick={continueToReview}
-                disabled={count === 0}
+                disabled={count === 0 || !classResolved}
                 className="mt-5 w-full rounded-xl bg-[#E8AA4D] py-5 font-medium text-[#3d2817] hover:bg-[#D09840]"
               >
                 Continue to Review
@@ -556,7 +746,7 @@ export default function BookingPassengersPage() {
         </div>
         <Button
           onClick={continueToReview}
-          disabled={count === 0}
+          disabled={count === 0 || !classResolved}
           className="shrink-0 rounded-xl bg-[#E8AA4D] px-6 py-5 font-medium text-[#3d2817] hover:bg-[#D09840]"
         >
           Review
