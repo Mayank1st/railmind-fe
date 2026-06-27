@@ -43,8 +43,12 @@ import {
 import { useSeatAvailability } from "@/hooks/useSeatAvailability";
 import { useAuthStore } from "@/store/auth";
 import { useSmartAutofill } from "@/hooks/useSmartAutofill";
+import { useFareAdvisorBatch } from "@/hooks/useFareAdvisorBatch";
+import { type FareAdvice, type FareAdvisorBatchItem } from "@/lib/fareAdvisor";
 import SearchForm from "@/components/train/SearchForm";
 import { FavouriteTrainHint } from "@/components/train/FavouriteTrainHint";
+import { FareAdvisorBadge } from "@/components/booking/FareAdvisorBadge";
+import { FareAdvisorNudge } from "@/components/booking/FareAdvisorNudge";
 
 // ── Train type badge colors ──
 const trainTypeBadge: Record<string, string> = {
@@ -196,11 +200,37 @@ export default function TrainSearchPage() {
     authStatus === "authed" && Boolean(from && to)
   );
   const favouriteTrain = favAutofill.data?.suggestion?.favourite_train ?? null;
-  // The favourite is just a number/name; grab the full Train from the current
-  // results (when present) to carry timings/type into the booking.
   const favouriteMatch = data?.trains?.find(
     (t) => t.train_number === favouriteTrain?.train_number
   );
+
+  // ── Book-Now-vs-Wait badges (one batch call for the whole results page) ──
+  const listClass = smartMode
+    ? (favAutofill.data?.suggestion?.train_class?.value ?? null)
+    : cls;
+  const advisorItems: FareAdvisorBatchItem[] =
+    listClass && data?.trains
+      ? data.trains.map((t) => ({
+          train_number: t.train_number,
+          train_class: listClass,
+          journey_date: t.journey_date ?? date,
+          quota,
+        }))
+      : [];
+  const advisorBatch = useFareAdvisorBatch(
+    advisorItems,
+    authStatus === "authed" && Boolean(listClass)
+  );
+  const advisorThreshold = advisorBatch.data?.threshold ?? 0.75;
+  const adviceByJourney = (() => {
+    const map: Record<string, FareAdvice> = {};
+    const advices = advisorBatch.data?.advices ?? [];
+    advisorItems.forEach((item, i) => {
+      const a = advices[i];
+      if (a) map[`${item.train_number}|${item.journey_date}`] = a;
+    });
+    return map;
+  })();
 
   // One-tap pick of the favourite. Mirrors a normal card tap: smart mode jumps to
   // the auto-filled booking; normal mode opens the train's details to book.
@@ -609,6 +639,12 @@ export default function TrainSearchPage() {
                 quota={quota}
                 date={date}
                 isSmart={smartMode}
+                advice={
+                  adviceByJourney[
+                    `${train.train_number}|${train.journey_date ?? date}`
+                  ] ?? null
+                }
+                advisorThreshold={advisorThreshold}
               />
             ))}
 
@@ -767,12 +803,16 @@ function TrainCard({
   quota,
   date,
   isSmart,
+  advice,
+  advisorThreshold,
 }: {
   train: Train;
   selectedClass: string;
   quota: string;
   date: string | null;
   isSmart: boolean;
+  advice: FareAdvice | null;
+  advisorThreshold: number;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -930,11 +970,16 @@ function TrainCard({
         </div>
 
         {/* Train name */}
-        <div className="mt-2 inline-flex items-center gap-1.5">
-          <h3 className="text-foreground group-hover:text-accent-warm text-xl font-medium transition-colors">
-            {train.train_name}
-          </h3>
-          <ArrowRight className="text-foreground/30 group-hover:text-accent-warm h-4 w-4 transition-colors" />
+        <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
+          <span className="inline-flex items-center gap-1.5">
+            <h3 className="text-foreground group-hover:text-accent-warm text-xl font-medium transition-colors">
+              {train.train_name}
+            </h3>
+            <ArrowRight className="text-foreground/30 group-hover:text-accent-warm h-4 w-4 transition-colors" />
+          </span>
+          {advice && (
+            <FareAdvisorBadge advice={advice} threshold={advisorThreshold} />
+          )}
         </div>
 
         {/* Row 2 — Timing */}
@@ -1064,6 +1109,21 @@ function TrainCard({
                     );
                   })}
             </div>
+            {/* Expanded a train → pay for the full Gemini reason (single call,
+                explain defaults true). Shares the ~60s server cache with the
+                list badge for the same (train, class, date). */}
+            <FareAdvisorNudge
+              params={{
+                train_number: train.train_number,
+                source_station_code: train.from_station,
+                destination_station_code: train.to_station,
+                train_class: selectedClass,
+                journey_date: cardDate ?? "",
+                quota,
+              }}
+              enabled={expanded && isAuthed}
+              className="mt-0"
+            />
             <button
               onClick={handleHide}
               className="text-foreground/60 flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-white/10 py-2.5 text-sm hover:bg-white/5"

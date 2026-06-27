@@ -32,6 +32,7 @@ import { useSeatAvailability } from "@/hooks/useSeatAvailability";
 import { useAuthStore } from "@/store/auth";
 import type { TrainCoach, TrainScheduleStop } from "@/lib/train";
 import { CoachLayout } from "@/components/train/CoachLayout";
+import { FareAdvisorNudge } from "@/components/booking/FareAdvisorNudge";
 
 const trainTypeBadge: Record<string, string> = {
   rajdhani: "bg-amber-500/20 text-amber-400",
@@ -137,6 +138,7 @@ export default function TrainDetailPage() {
   const date = searchParams.get("date");
 
   const [activeTab, setActiveTab] = useState<TabKey>("schedule");
+  const [selectedClass, setSelectedClass] = useState(cls);
 
   const { data: schedule, isLoading: scheduleLoading } =
     useTrainSchedule(trainNumber);
@@ -455,10 +457,19 @@ export default function TrainDetailPage() {
                   return (
                     <div
                       key={c.class_code}
-                      className={`rounded-lg border p-3 ${
-                        c.class_code === cls
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => setSelectedClass(c.class_code)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          setSelectedClass(c.class_code);
+                        }
+                      }}
+                      className={`cursor-pointer rounded-lg border p-3 transition-colors ${
+                        c.class_code === selectedClass
                           ? "border-accent-warm/30 bg-accent-warm/5"
-                          : "border-white/10 bg-white/[0.02]"
+                          : "border-white/10 bg-white/[0.02] hover:border-white/20"
                       }`}
                     >
                       <div className="flex items-start justify-between gap-3">
@@ -501,7 +512,10 @@ export default function TrainDetailPage() {
                           )}
                         </div>
                         <button
-                          onClick={() => handleBook(c.class_code)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleBook(c.class_code);
+                          }}
                           className="bg-accent-warm shrink-0 cursor-pointer rounded-lg px-4 py-1.5 text-xs font-medium text-white hover:opacity-90"
                         >
                           {isAuthed ? (
@@ -518,6 +532,22 @@ export default function TrainDetailPage() {
                   );
                 })}
               </div>
+
+              {/* Book-Now-vs-Wait advice for the class the user is weighing.
+                  Needs the same context as live availability (auth + route +
+                  date), so it rides alongside it — advisory, never blocks Book. */}
+              <FareAdvisorNudge
+                params={{
+                  train_number: trainNumber,
+                  source_station_code: from,
+                  destination_station_code: to,
+                  train_class: selectedClass,
+                  journey_date: date ?? "",
+                  quota,
+                }}
+                enabled={canFetchSeats}
+                className="mt-4"
+              />
 
               {!isAuthed && (
                 <p className="text-foreground/40 mt-4 text-xs">
