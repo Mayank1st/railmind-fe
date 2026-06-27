@@ -30,6 +30,7 @@ import { useSmartAutofill } from "@/hooks/useSmartAutofill";
 import { inr } from "@/lib/fare";
 import { normalizeIdNumber } from "@/lib/document";
 import { MobileActionBar } from "@/components/booking/mobile-action-bar";
+import { FareAdvisorNudge } from "@/components/booking/FareAdvisorNudge";
 import {
   draftToPayload,
   EMPTY_DRAFT,
@@ -411,6 +412,14 @@ export default function BookingPassengersPage() {
       ? (CLASS_LABEL[suggestedClass.value] ?? suggestedClass.value)
       : null;
 
+  const advisorEnabled =
+    authStatus === "authed" &&
+    classResolved &&
+    train !== "—" &&
+    Boolean(from) &&
+    Boolean(to) &&
+    Boolean(dateRaw);
+
   return (
     <div className="app-container-narrow pt-8 pb-28 lg:pb-8">
       {/* Journey summary bar */}
@@ -456,6 +465,19 @@ export default function BookingPassengersPage() {
             Select up to {maxPax} passengers.
             {isTatkal ? " Tatkal allows max 4." : " Tatkal allows max 4."}
           </p>
+
+          {/* Book-Now-vs-Wait advice — advisory nudge, never gates the flow */}
+          <FareAdvisorNudge
+            params={{
+              train_number: train,
+              source_station_code: from,
+              destination_station_code: to,
+              train_class: cls,
+              journey_date: dateRaw ?? "",
+              quota,
+            }}
+            enabled={advisorEnabled}
+          />
 
           {/* Read-only class nudge — informational, never auto-changes the class */}
           {classNudge && (
