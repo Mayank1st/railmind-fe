@@ -198,49 +198,53 @@ export default function SearchForm({
         )}
       </div>
 
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
-        {/* FROM */}
-        <StationInput
-          label="From"
-          value={fromCode}
-          displayValue={fromDisplay}
-          onChange={(code, name) => {
-            setFromCode(code);
-            setFromDisplay(`${code} · ${name}`);
-          }}
-          placeholder="Source station"
-        />
+      <div className="flex flex-col gap-3 xl:flex-row xl:items-end">
+        {/* FROM / swap / TO — stacked on phones, side by side from sm, and
+            sharing the single row with the controls at xl */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end xl:flex-1">
+          {/* FROM */}
+          <StationInput
+            label="From"
+            value={fromCode}
+            displayValue={fromDisplay}
+            onChange={(code, name) => {
+              setFromCode(code);
+              setFromDisplay(`${code} · ${name}`);
+            }}
+            placeholder="Source station"
+          />
 
-        {/* Swap button */}
-        <button
-          type="button"
-          onClick={() => {
-            setFromCode(toCode);
-            setFromDisplay(toDisplay);
-            setToCode(fromCode);
-            setToDisplay(fromDisplay);
-          }}
-          className="flex h-8 w-8 shrink-0 items-center justify-center self-center rounded-full border border-white/10 text-white/40 hover:text-white lg:mb-1 lg:self-auto"
-        >
-          <ArrowRight className="h-4 w-4 rotate-90 lg:rotate-0" />
-        </button>
+          {/* Swap button */}
+          <button
+            type="button"
+            onClick={() => {
+              setFromCode(toCode);
+              setFromDisplay(toDisplay);
+              setToCode(fromCode);
+              setToDisplay(fromDisplay);
+            }}
+            className="flex h-8 w-8 shrink-0 items-center justify-center self-center rounded-full border border-white/10 text-white/40 hover:text-white sm:mb-1 sm:self-auto"
+          >
+            <ArrowRight className="h-4 w-4 rotate-90 sm:rotate-0" />
+          </button>
 
-        {/* TO */}
-        <StationInput
-          label="To"
-          value={toCode}
-          displayValue={toDisplay}
-          onChange={(code, name) => {
-            setToCode(code);
-            setToDisplay(`${code} · ${name}`);
-          }}
-          placeholder="Destination station"
-        />
+          {/* TO */}
+          <StationInput
+            label="To"
+            value={toCode}
+            displayValue={toDisplay}
+            onChange={(code, name) => {
+              setToCode(code);
+              setToDisplay(`${code} · ${name}`);
+            }}
+            placeholder="Destination station"
+          />
+        </div>
 
         {/* Date / Class / Quota / Search — 2-col on mobile, inline on desktop */}
-        <div className="grid grid-cols-2 gap-3 lg:flex lg:items-end lg:gap-3">
+        <div className="grid grid-cols-2 gap-3 xl:flex xl:items-end xl:gap-3">
           {/* JOURNEY DATE */}
-          <div className="col-span-2 lg:w-52">
+          <div className="col-span-2 xl:w-52">
             <label className="mb-2 block text-xs font-medium tracking-wider text-white/40 uppercase">
               Journey Date
             </label>
@@ -280,7 +284,7 @@ export default function SearchForm({
 
           {smart ? (
             /* Smart mode: class & quota are auto-picked at booking */
-            <div className="border-accent-warm/30 bg-accent-warm/10 col-span-2 flex items-center gap-2 self-stretch rounded-lg border px-4 py-3 lg:self-auto">
+            <div className="border-accent-warm/30 bg-accent-warm/10 col-span-2 flex items-center gap-2 self-stretch rounded-lg border px-4 py-3 xl:self-auto">
               <Sparkles className="text-accent-warm h-4 w-4 shrink-0" />
               <span className="text-sm text-white/70">
                 Class &amp; quota auto-picked
@@ -289,7 +293,7 @@ export default function SearchForm({
           ) : (
             <>
               {/* CLASS */}
-              <div className="lg:w-36">
+              <div className="xl:w-36">
                 <label className="mb-2 block text-xs font-medium tracking-wider text-white/40 uppercase">
                   Class
                 </label>
@@ -313,7 +317,7 @@ export default function SearchForm({
               </div>
 
               {/* QUOTA */}
-              <div className="lg:w-40">
+              <div className="xl:w-40">
                 <label className="mb-2 block text-xs font-medium tracking-wider text-white/40 uppercase">
                   Quota
                 </label>
@@ -339,7 +343,7 @@ export default function SearchForm({
           {/* SEARCH BUTTON */}
           <button
             onClick={handleSearch}
-            className="bg-accent-warm col-span-2 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl px-6 py-3 font-medium text-[#1a1a18] hover:opacity-90 lg:w-auto"
+            className="bg-accent-warm col-span-2 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl px-6 py-3 font-medium text-[#1a1a18] hover:opacity-90 xl:w-auto"
           >
             <Search className="h-4 w-4" />
             Search

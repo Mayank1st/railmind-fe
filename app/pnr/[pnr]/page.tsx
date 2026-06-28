@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { Spinner } from "@/components/ui/spinner";
+import { WaitlistPredictorCard } from "@/components/booking/WaitlistPredictorCard";
 import {
   Table,
   TableBody,
@@ -128,7 +129,7 @@ export default function PnrStatusPage() {
             <div className="flex flex-wrap items-center gap-3">
               <span
                 className={`rounded-md px-3 py-1 text-xs font-medium uppercase ${
-                  statusBadge[data.booking_status] ??
+                  statusBadge[data.booking_status?.toLowerCase()] ??
                   "bg-gray-500/20 text-gray-400"
                 }`}
               >
@@ -354,7 +355,7 @@ export default function PnrStatusPage() {
         </div>
 
         {/* ── Info Banner ── */}
-        {data.booking_status === "cancelled" && (
+        {data.booking_status?.toLowerCase() === "cancelled" && (
           <div className="border-accent-warm/20 bg-accent-warm/5 mt-6 flex items-start gap-3 rounded-xl border px-5 py-4">
             <Sparkles className="text-accent-warm mt-0.5 h-5 w-5 shrink-0" />
             <p className="text-foreground/70 text-sm">
@@ -368,7 +369,7 @@ export default function PnrStatusPage() {
           </div>
         )}
 
-        {data.booking_status === "waitlisted" && (
+        {data.booking_status?.toLowerCase() === "waitlisted" && (
           <div className="mt-6 flex items-start gap-3 rounded-xl border border-amber-500/20 bg-amber-500/5 px-5 py-4">
             <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-amber-400" />
             <p className="text-foreground/70 text-sm">
@@ -385,7 +386,17 @@ export default function PnrStatusPage() {
           </div>
         )}
 
-        {data.booking_status === "confirmed" && (
+        {/* ── AI Waitlist Confirmation Predictor (WL tickets only) ── */}
+        <WaitlistPredictorCard
+          pnr={data.pnr_number}
+          sourceStationCode={data.source_station_code}
+          destinationStationCode={data.destination_station_code}
+          trainClass={data.train_class}
+          quota={data.quota}
+          enabled={data.booking_status?.toLowerCase() === "waitlisted"}
+        />
+
+        {data.booking_status?.toLowerCase() === "confirmed" && (
           <div className="mt-6 flex items-start gap-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-5 py-4">
             <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-emerald-400" />
             <p className="text-foreground/70 text-sm">

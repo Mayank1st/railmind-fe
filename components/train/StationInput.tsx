@@ -85,7 +85,7 @@ export default function StationInput({
   };
 
   return (
-    <div ref={wrapperRef} className="relative flex-1">
+    <div ref={wrapperRef} className="relative min-w-0 flex-1">
       <label className="mb-2 block text-xs font-medium tracking-wider text-white/40 uppercase">
         {label}
       </label>
@@ -104,7 +104,7 @@ export default function StationInput({
             if (displayValue.length >= 2) setOpen(true);
           }}
           onKeyDown={handleKeyDown}
-          className="text-foreground flex-1 bg-transparent text-sm outline-none placeholder:text-white/90"
+          className="text-foreground w-full min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-white/90"
         />
         <MapPin className="h-4 w-4 text-white/40" />
       </div>
