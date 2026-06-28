@@ -1056,13 +1056,25 @@ function TrainCard({
                     const avail = seatData?.classes?.find(
                       (s) => s.class_code === c
                     );
-                    const bookable = avail?.status === "AVL";
+                    // Advisory, never blocking: AVL / RAC / WL are all
+                    // bookable (a WL booking is valid — auto-refund if it never
+                    // confirms). Only truly-no-inventory (REGRET) or unknown
+                    // ("--") stays non-clickable.
+                    const bookable =
+                      avail != null &&
+                      ["AVL", "RAC", "WL"].includes(avail.status);
+                    const bookTitle =
+                      avail?.status === "WL"
+                        ? "Book waitlist — confirmation not guaranteed"
+                        : avail?.status === "RAC"
+                          ? "Book RAC — partial confirmation"
+                          : "Book this class";
                     return (
                       <div
                         key={c}
                         role={bookable ? "button" : undefined}
                         tabIndex={bookable ? 0 : undefined}
-                        title={bookable ? "Book this class" : undefined}
+                        title={bookable ? bookTitle : undefined}
                         onClick={
                           bookable
                             ? (e) => {
@@ -1087,7 +1099,7 @@ function TrainCard({
                             : "border-white/5 bg-white/[0.02]"
                         } ${
                           bookable
-                            ? "cursor-pointer hover:border-emerald-400/40 hover:bg-emerald-400/[0.06] focus-visible:border-emerald-400/50 focus-visible:outline-none"
+                            ? "cursor-pointer hover:border-white/25 hover:bg-white/[0.05] focus-visible:border-white/40 focus-visible:outline-none"
                             : ""
                         }`}
                       >

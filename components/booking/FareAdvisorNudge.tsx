@@ -143,6 +143,10 @@ export function FareAdvisorNudge({
               low certainty
             </span>
           )}
+          {/* Advisory only — a nudge, never a blocker. */}
+          <span className="text-muted-foreground ml-auto text-[10px] tracking-wide uppercase">
+            AI suggestion
+          </span>
         </div>
         <p className="mt-1 text-white/80">{advice.reason}</p>
         {chips.length > 0 && (
