@@ -107,8 +107,9 @@ export default function Navbar() {
             <Image
               src="/images/new_logo.png"
               alt="RailMind Logo"
-              width={100}
-              height={50}
+              width={2146}
+              height={530}
+              className="h-10 w-auto shrink-0"
               priority
             />
             {/* <div className="flex flex-col leading-none">

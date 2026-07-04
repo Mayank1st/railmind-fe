@@ -10,8 +10,19 @@ import {
   Receipt,
   Bookmark,
   ArrowRight,
+  TrainFront,
   type LucideIcon,
 } from "lucide-react";
+
+import { cn } from "@/lib/utils";
+import {
+  DEMAND_STYLE,
+  formatAvgDuration,
+  formatMinFare,
+  type WeeklyTrendingRoute,
+} from "@/lib/trending";
+import { useWeeklyTrendingRoutes } from "@/hooks/useWeeklyTrendingRoutes";
+import { PopularDestinations } from "@/components/home/PopularDestinations";
 
 type QuickLink = {
   icon: LucideIcon;
@@ -49,40 +60,23 @@ const quickLinks: QuickLink[] = [
   },
 ];
 
-const trendingRoutes = [
-  {
-    from: "BCT",
-    to: "NDLS",
-    demand: "High",
-    trainNumber: "12951",
-    trainName: "Mumbai Rajdhani",
-    duration: "15h 35m avg journey",
-    price: "₹1,310",
-    href: "/trains/search?from=BCT&to=NDLS&class=SL&quota=GN&hours=48",
-  },
-  {
-    from: "SBC",
-    to: "MAS",
-    demand: "Medium",
-    trainNumber: "12028",
-    trainName: "Shatabdi Exp",
-    duration: "5h 00m avg journey",
-    price: "₹780",
-    href: "/trains/search?from=SBC&to=MAS&class=CC&quota=GN&hours=48",
-  },
-  {
-    from: "HWH",
-    to: "PURI",
-    demand: "Low",
-    trainNumber: "12277",
-    trainName: "Howrah Puri",
-    duration: "7h 45m avg journey",
-    price: "₹420",
-    href: "/trains/search?from=HWH&to=PURI&class=SL&quota=GN&hours=48",
-  },
-];
-
 export default function HomePage() {
+  const { data, isLoading } = useWeeklyTrendingRoutes();
+  const routes = data?.routes ?? [];
+  // Loading → show skeletons; loaded-but-empty (or errored → empty) hides the
+  // whole section, per the trending contract's empty-week behavior.
+  const showTrending = isLoading || routes.length > 0;
+
+  // Grid adapts to the card count so a 2-route week doesn't leave an empty
+  // third column (skeletons render as a full row of 3).
+  const cardCount = isLoading ? 3 : routes.length;
+  const gridColsClass =
+    cardCount >= 3
+      ? "sm:grid-cols-2 lg:grid-cols-3"
+      : cardCount === 2
+        ? "sm:grid-cols-2"
+        : "sm:max-w-md";
+
   return (
     <main className="relative min-h-screen bg-[#1a1a18]">
       {/* Background gradient — cream wash fading to dark */}
@@ -156,55 +150,42 @@ export default function HomePage() {
           })}
         </div>
 
-        {/* Trending this week */}
-        <section className="mt-16">
-          <div className="flex items-center justify-between">
-            <h2 className="font-heading text-foreground text-3xl font-normal">
-              Trending this week
-            </h2>
-            <Link
-              href="/trains/search"
-              className="text-accent-warm text-sm hover:underline"
-            >
-              View all routes →
-            </Link>
-          </div>
+        {/* Popular destinations — auto-scrolling carousel (mock data for now) */}
+        <PopularDestinations />
 
-          <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
-            {trendingRoutes.map((route) => (
+        {/* Trending this week — backend computes this weekly (Sunday 23:59
+            IST). Hidden entirely when there's no data for the week. */}
+        {showTrending && (
+          <section className="mt-14">
+            <div className="flex items-center justify-between">
+              <h2 className="font-heading text-foreground text-3xl font-normal">
+                Trending this week
+              </h2>
               <Link
-                key={`${route.from}-${route.to}`}
-                href={route.href}
-                className="rounded-2xl border border-white/10 bg-[#121713] p-5 transition-colors hover:border-white/20"
+                href="/trains/search"
+                className="text-accent-warm text-sm hover:underline"
               >
-                <div className="flex items-center justify-between">
-                  <p className="flex items-center gap-1.5 text-sm font-medium tracking-wider text-white/50 uppercase">
-                    {route.from}
-                    <ArrowRight className="h-3.5 w-3.5" />
-                    {route.to}
-                  </p>
-                  <span className="border-accent-warm/30 text-accent-warm flex items-center gap-1.5 rounded-full border bg-[#2a2318] px-3 py-1 text-xs whitespace-nowrap">
-                    <span className="bg-accent-warm h-1.5 w-1.5 rounded-full" />
-                    {route.demand} demand
-                  </span>
-                </div>
-                <p className="text-foreground mt-4 text-lg font-medium">
-                  {route.trainNumber} {route.trainName}
-                </p>
-                <p className="mt-1 text-sm text-white/40">{route.duration}</p>
-                <div className="mt-5 flex items-end justify-between">
-                  <span className="text-sm text-white/40">from</span>
-                  <span className="text-foreground text-2xl font-semibold">
-                    {route.price}
-                  </span>
-                </div>
+                View all routes →
               </Link>
-            ))}
-          </div>
-        </section>
+            </div>
+
+            <div className={cn("mt-6 grid grid-cols-1 gap-4", gridColsClass)}>
+              {isLoading
+                ? Array.from({ length: 3 }).map((_, i) => (
+                    <TrendingCardSkeleton key={i} />
+                  ))
+                : routes.map((route) => (
+                    <TrendingRouteCard
+                      key={`${route.demand_level}-${route.source_station_code}-${route.destination_station_code}`}
+                      route={route}
+                    />
+                  ))}
+            </div>
+          </section>
+        )}
 
         {/* Waitlist CTA + Help */}
-        <section className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <section className="mt-14 grid grid-cols-1 gap-4 lg:grid-cols-3">
           <div className="bg-accent-warm rounded-2xl p-8 lg:col-span-2">
             <span className="inline-flex items-center gap-2 rounded-full bg-[#3d2817]/10 px-3 py-1 text-xs font-medium text-[#3d2817]">
               RailMind AI
@@ -238,5 +219,117 @@ export default function HomePage() {
         </section>
       </div>
     </main>
+  );
+}
+
+// "NEW DELHI" → "New Delhi" — station names come back upper-cased.
+function toTitleCase(value: string): string {
+  return value.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+// One trending route card. train/duration/fare lines are best-effort — each is
+// hidden when its field is null; the route + demand badge always render.
+function TrendingRouteCard({ route }: { route: WeeklyTrendingRoute }) {
+  const duration = formatAvgDuration(route.avg_duration_minutes);
+  const fare = formatMinFare(route.min_fare);
+  const demand = DEMAND_STYLE[route.demand_level];
+  const href = `/trains/search?from=${route.source_station_code}&to=${route.destination_station_code}`;
+
+  return (
+    <Link
+      href={href}
+      className="group flex flex-col rounded-2xl border border-white/10 bg-[#121713] p-5 transition-colors hover:border-white/20"
+    >
+      {/* Route + demand badge */}
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="flex items-center gap-1.5 text-sm font-medium tracking-wider text-white/60 uppercase">
+            {route.source_station_code}
+            <ArrowRight className="h-3.5 w-3.5" />
+            {route.destination_station_code}
+          </p>
+          <p className="mt-1 truncate text-xs text-white/35">
+            {toTitleCase(route.source_station_name)} →{" "}
+            {toTitleCase(route.destination_station_name)}
+          </p>
+        </div>
+        <span
+          className={cn(
+            "flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 text-xs whitespace-nowrap",
+            demand.badgeClassName
+          )}
+        >
+          <span
+            className={cn("h-1.5 w-1.5 rounded-full", demand.dotClassName)}
+          />
+          {demand.label}
+        </span>
+      </div>
+
+      {/* Representative train + avg journey */}
+      {(route.train_number || duration) && (
+        <div className="mt-5 flex items-center gap-3">
+          <span className="bg-accent-warm/15 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl">
+            <TrainFront className="text-accent-warm h-5 w-5" />
+          </span>
+          <div className="min-w-0">
+            {route.train_number && (
+              <p className="text-foreground truncate font-medium">
+                {route.train_number}
+                {route.train_name ? ` · ${route.train_name}` : ""}
+              </p>
+            )}
+            {duration && (
+              <p className="truncate text-xs text-white/40">{duration}</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Price + CTA */}
+      <div className="mt-5 flex items-end justify-between border-t border-white/5 pt-4">
+        <div className="flex items-baseline gap-1.5">
+          {fare ? (
+            <>
+              <span className="text-sm text-white/40">from</span>
+              <span className="text-foreground text-2xl font-semibold">
+                {fare}
+              </span>
+            </>
+          ) : (
+            <span className="text-sm text-white/40">View fares</span>
+          )}
+        </div>
+        <span className="text-accent-warm flex items-center gap-1 text-sm font-medium">
+          Search
+          <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+        </span>
+      </div>
+    </Link>
+  );
+}
+
+function TrendingCardSkeleton() {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-[#121713] p-5">
+      <div className="flex items-start justify-between">
+        <div>
+          <div className="h-4 w-24 animate-pulse rounded bg-white/10" />
+          <div className="mt-2 h-3 w-28 animate-pulse rounded bg-white/10" />
+        </div>
+        <div className="h-6 w-24 animate-pulse rounded-full bg-white/10" />
+      </div>
+      <div className="mt-5 flex items-center gap-3">
+        <div className="h-10 w-10 animate-pulse rounded-xl bg-white/10" />
+        <div>
+          <div className="h-4 w-32 animate-pulse rounded bg-white/10" />
+          <div className="mt-2 h-3 w-20 animate-pulse rounded bg-white/10" />
+        </div>
+      </div>
+      <div className="mt-5 flex items-center justify-between border-t border-white/5 pt-4">
+        <div className="h-7 w-24 animate-pulse rounded bg-white/10" />
+        <div className="h-4 w-16 animate-pulse rounded bg-white/10" />
+      </div>
+    </div>
   );
 }

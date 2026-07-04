@@ -85,7 +85,7 @@ const links = [
   {
     heading: "Company",
     items: [
-      { label: "About", href: "#" },
+      { label: "About", href: "/about" },
       { label: "Help Center", href: "/help" },
       { label: "Contact", href: "#" },
       { label: "Press", href: "#" },
@@ -117,8 +117,9 @@ export default function Footer() {
               <Image
                 src="/images/new_logo.png"
                 alt="RailMind"
-                width={120}
-                height={80}
+                width={2146}
+                height={530}
+                className="h-9 w-auto"
               />
             </Link>
             <Separator className="bg-white/10" />

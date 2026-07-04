@@ -110,8 +110,9 @@ export default function MobileMenu() {
               <Image
                 src="/images/new_logo.png"
                 alt="RailMind"
-                width={96}
-                height={48}
+                width={2146}
+                height={530}
+                className="h-9 w-auto shrink-0"
                 priority
               />
             </Link>
