@@ -16,6 +16,11 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 import { authApi } from "@/lib/auth";
 import { toApiError } from "@/lib/api";
@@ -229,17 +234,22 @@ export default function LoginPage() {
               >
                 Password
               </button>
-              <button
-                type="button"
-                onClick={() => setLoginMode("otp")}
-                className={`flex-1 cursor-pointer rounded-md px-4 py-2 text-sm font-medium transition-colors ${
-                  loginMode === "otp"
-                    ? "text-foreground bg-[#3a3a38]"
-                    : "text-foreground/40 hover:text-foreground/60"
-                }`}
-              >
-                OTP
-              </button>
+              <Tooltip>
+                {/* Disabled buttons swallow pointer events, so the tooltip
+                    listens on a wrapping span instead. */}
+                <TooltipTrigger asChild>
+                  <span className="flex-1">
+                    <button
+                      type="button"
+                      disabled
+                      className="text-foreground/30 w-full cursor-not-allowed rounded-md px-4 py-2 text-sm font-medium"
+                    >
+                      OTP
+                    </button>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>Coming soon</TooltipContent>
+              </Tooltip>
             </div>
 
             {/* Forms — both stacked in same grid cell so they cross-fade */}
