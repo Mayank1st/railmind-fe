@@ -25,6 +25,16 @@ export type LoginOtpRequestPayload = { email: string };
 
 export type OtpVerifyPayload = { email: string; code: string };
 
+// WhatsApp OTP login. `mobile_number` is a 10-digit Indian mobile
+// (^[6-9]\d{9}$ — no +91, no spaces); `otp` must be sent as a string.
+export type WhatsappOtpSendPayload = { mobile_number: string };
+
+export type WhatsappOtpVerifyPayload = {
+  mobile_number: string;
+  otp: string;
+  remember_me?: boolean;
+};
+
 export type RegisterPayload = {
   first_name: string;
   last_name: string;
@@ -60,6 +70,17 @@ export const authApi = {
 
   verifyOtp: (payload: OtpVerifyPayload) =>
     api.post("/auth/otp/verify", payload).then((r) => r.data.data),
+
+  // WhatsApp OTP login — both endpoints are public. On verify success the
+  // backend sets the same httpOnly session cookies as password/Google login,
+  // and `data` has the same shape as /auth/login.
+  sendWhatsappOtp: (payload: WhatsappOtpSendPayload) =>
+    api.post("/auth/login/whatsapp/send-otp", payload).then((r) => r.data),
+
+  verifyWhatsappOtp: (payload: WhatsappOtpVerifyPayload): Promise<User> =>
+    api
+      .post("/auth/login/whatsapp/verify-otp", payload)
+      .then((r) => r.data.data),
 
   register: (payload: RegisterPayload) =>
     api.post("/auth/register", payload).then((r) => r.data),
