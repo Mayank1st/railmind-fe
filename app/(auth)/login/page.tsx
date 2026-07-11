@@ -17,7 +17,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
-import { authApi } from "@/lib/auth";
+import { WhatsappOtpForm } from "@/components/auth/WhatsappOtpForm";
+import { authApi, type User } from "@/lib/auth";
 import { toApiError } from "@/lib/api";
 import { useAuthStore } from "@/store/auth";
 
@@ -27,13 +28,7 @@ const passwordSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
 
-// ── OTP Login Schema ──
-const otpSchema = z.object({
-  email: z.string().email("Invalid email address"),
-});
-
 type PasswordFormData = z.infer<typeof passwordSchema>;
-type OtpFormData = z.infer<typeof otpSchema>;
 
 export default function LoginPage() {
   const router = useRouter();
@@ -51,10 +46,6 @@ export default function LoginPage() {
 
   const passwordForm = useForm<PasswordFormData>({
     resolver: zodResolver(passwordSchema),
-  });
-
-  const otpForm = useForm<OtpFormData>({
-    resolver: zodResolver(otpSchema),
   });
 
   const nextPath = searchParams.get("next") ?? "/";
@@ -97,17 +88,12 @@ export default function LoginPage() {
     }
   };
 
-  const onOtpSubmit = async (data: OtpFormData) => {
-    setSubmitError(null);
-    setIsSubmitting(true);
-    try {
-      await authApi.requestOtp(data);
-      router.push(`/otp?email=${encodeURIComponent(data.email)}`);
-    } catch (err) {
-      setSubmitError(toApiError(err).message);
-    } finally {
-      setIsSubmitting(false);
-    }
+  // WhatsApp OTP verify sets the same session cookies as password login —
+  // post-login handling is identical.
+  const onWhatsappLogin = (user: User) => {
+    setUser(user);
+    router.replace(nextPath);
+    router.refresh();
   };
 
   return (
@@ -238,7 +224,7 @@ export default function LoginPage() {
                     : "text-foreground/40 hover:text-foreground/60"
                 }`}
               >
-                OTP
+                WhatsApp OTP
               </button>
             </div>
 
@@ -340,7 +326,7 @@ export default function LoginPage() {
                 </form>
               </div>
 
-              {/* ── OTP Form ── */}
+              {/* ── WhatsApp OTP Form ── */}
               <div
                 aria-hidden={loginMode !== "otp"}
                 className={`col-start-1 row-start-1 transition-all duration-300 ease-out ${
@@ -349,40 +335,11 @@ export default function LoginPage() {
                     : "pointer-events-none translate-x-2 opacity-0"
                 }`}
               >
-                <form
-                  onSubmit={otpForm.handleSubmit(onOtpSubmit)}
-                  className="space-y-4"
-                >
-                  <div>
-                    <label className="mb-1.5 block text-xs font-medium tracking-wider text-white/40 uppercase">
-                      Email or Mobile
-                    </label>
-                    <input
-                      {...otpForm.register("email")}
-                      placeholder="ananya.s@example.com"
-                      className="text-foreground w-full rounded-lg bg-[#2a2a28] px-4 py-3 text-sm outline-none placeholder:text-white/30"
-                    />
-                    {otpForm.formState.errors.email && (
-                      <p className="mt-1 text-xs text-red-400">
-                        {otpForm.formState.errors.email.message}
-                      </p>
-                    )}
-                  </div>
-
-                  {submitError && (
-                    <p className="rounded-md bg-red-500/10 px-3 py-2 text-xs text-red-400">
-                      {submitError}
-                    </p>
-                  )}
-
-                  <Button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="w-full cursor-pointer rounded-lg bg-[#E8AA4D] py-6 text-sm font-medium text-[#1a1a18] hover:bg-[#D09840] disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {isSubmitting ? "Sending…" : "Send OTP"}
-                  </Button>
-                </form>
+                <WhatsappOtpForm
+                  rememberMe={rememberMe}
+                  onRememberMeChange={setRememberMe}
+                  onSuccess={onWhatsappLogin}
+                />
               </div>
             </div>
           </div>
