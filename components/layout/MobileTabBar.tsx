@@ -28,7 +28,12 @@ const HIDDEN_ON = [
 
 export default function MobileTabBar() {
   const pathname = usePathname();
-  if (HIDDEN_ON.some((p) => pathname.startsWith(p))) return null;
+  // The cancellation advisor is an action step too (dynamic id in the middle,
+  // so it can't live in the prefix list above).
+  const isCancelAdvisor =
+    pathname.startsWith("/bookings/") && pathname.endsWith("/cancel");
+  if (isCancelAdvisor || HIDDEN_ON.some((p) => pathname.startsWith(p)))
+    return null;
 
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);

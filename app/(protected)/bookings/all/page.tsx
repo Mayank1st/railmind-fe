@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AlertCircle, ChevronRight, Search } from "lucide-react";
 import { differenceInCalendarDays, format, isValid, parseISO } from "date-fns";
@@ -25,30 +25,37 @@ export default function AllBookingsPage() {
   const [filter, setFilter] = useState<BookingFilter>("ALL");
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
+  // Search runs server-side over the whole list (PNR / train number / name),
+  // debounced so we don't fire a request per keystroke. New search → page 1.
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setDebouncedSearch(search.trim());
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [search]);
 
   const counts = useBookingCounts();
   const { data, isLoading, isError, isPlaceholderData } = useBookingsList(
     filter,
     page,
-    PAGE_SIZE
+    PAGE_SIZE,
+    debouncedSearch
   );
 
-  const journeys = data?.journeys ?? [];
+  const rows = data?.journeys ?? [];
   const meta = data?.meta;
-
-  const q = search.trim().toLowerCase();
-  const rows = q
-    ? journeys.filter((j) =>
-        `${j.pnr_number} ${j.train_number} ${j.train_name}`
-          .toLowerCase()
-          .includes(q)
-      )
-    : journeys;
+  const q = debouncedSearch;
 
   function changeFilter(next: BookingFilter) {
     setFilter(next);
     setPage(1);
     setSearch("");
+    // Clear immediately (not after the debounce) so the tab switch doesn't
+    // briefly refetch with the old search text.
+    setDebouncedSearch("");
   }
 
   return (
@@ -104,6 +111,7 @@ export default function AllBookingsPage() {
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
+          maxLength={50}
           placeholder="Search PNR or train"
           className="text-foreground placeholder:text-muted-foreground h-10 w-full rounded-lg border border-white/10 bg-white/[0.03] pr-3 pl-9 text-sm focus:border-white/25 focus:outline-none sm:max-w-xs"
         />
