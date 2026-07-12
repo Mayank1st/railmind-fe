@@ -25,20 +25,10 @@ import { usePnrStatus } from "@/hooks/usePnrStatus";
 import { useReceipt } from "@/hooks/useReceipt";
 import { useFarePreview } from "@/hooks/useFarePreview";
 import { useDownloadTicket } from "@/hooks/useDownloadTicket";
-import { useCancelBooking } from "@/hooks/useCancelBooking";
 import { ReceiptDialog } from "@/components/booking/receipt-dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 
 const QUOTA_LABEL: Record<string, string> = {
   GN: "General",
@@ -62,7 +52,6 @@ export default function BookingDetailPage() {
   const pnrStatus = usePnrStatus(pnrNumber);
   const receipt = useReceipt(id, isPaid);
   const downloadTicket = useDownloadTicket();
-  const cancelBooking = useCancelBooking();
 
   // Paid bookings have a receipt with the real line items. Unpaid ones don't,
   // so pull the component split (base fare + charges + taxes) from the fare
@@ -82,19 +71,7 @@ export default function BookingDetailPage() {
     !isPaid && !isCancelled && passengerCount > 0 && !!booking.data
   );
 
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [cancelError, setCancelError] = useState<string | null>(null);
   const [receiptOpen, setReceiptOpen] = useState(false);
-
-  async function onCancel() {
-    setCancelError(null);
-    try {
-      await cancelBooking.mutateAsync(id);
-      setConfirmOpen(false);
-    } catch (e) {
-      setCancelError(toApiError(e).message);
-    }
-  }
 
   return (
     <div className="app-container-narrow py-10">
@@ -147,10 +124,7 @@ export default function BookingDetailPage() {
               downloading={downloadTicket.isPending}
               onDownload={() => downloadTicket.mutate(id)}
               onReceipt={() => setReceiptOpen(true)}
-              onCancel={() => {
-                setCancelError(null);
-                setConfirmOpen(true);
-              }}
+              cancelHref={`/bookings/${id}/cancel`}
             />
             {!isCancelled && (
               <ChartStatusCard
@@ -163,51 +137,6 @@ export default function BookingDetailPage() {
           </div>
         </div>
       )}
-
-      {/* Cancel confirmation */}
-      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Cancel this booking?</DialogTitle>
-            <DialogDescription>
-              PNR {booking.data?.pnr_number} will be cancelled. Refunds follow
-              the cancellation policy and can take a few days.
-            </DialogDescription>
-          </DialogHeader>
-
-          {cancelError && (
-            <div className="flex items-start gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-3.5 py-3 text-sm text-red-300">
-              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-              <span>{cancelError}</span>
-            </div>
-          )}
-
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button
-                variant="outline"
-                className="rounded-xl border-white/12 bg-transparent hover:bg-white/5"
-              >
-                Keep booking
-              </Button>
-            </DialogClose>
-            <Button
-              onClick={onCancel}
-              disabled={cancelBooking.isPending}
-              className="rounded-xl bg-red-500 font-medium text-white hover:bg-red-600"
-            >
-              {cancelBooking.isPending ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Cancelling…
-                </>
-              ) : (
-                "Cancel booking"
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       <ReceiptDialog
         open={receiptOpen}
@@ -546,14 +475,14 @@ function QuickActions({
   downloading,
   onDownload,
   onReceipt,
-  onCancel,
+  cancelHref,
 }: {
   pnrNumber: string | null;
   isCancelled: boolean;
   downloading: boolean;
   onDownload: () => void;
   onReceipt: () => void;
-  onCancel: () => void;
+  cancelHref: string;
 }) {
   return (
     <Card className="bg-card/40 border-white/8 shadow-none">
@@ -589,7 +518,7 @@ function QuickActions({
               variant="danger"
               icon={<XCircle className="h-4 w-4" />}
               label="Cancel"
-              onClick={onCancel}
+              href={cancelHref}
             />
           )}
         </div>

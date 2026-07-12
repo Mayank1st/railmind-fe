@@ -161,14 +161,19 @@ export const bookingsApi = {
       .then((r) => r.data.data),
 
   // Paginated + server-filtered list backing the full "My bookings" page.
+  // `search` matches PNR / train number / train name (case-insensitive,
+  // substring) across the whole list server-side; empty string is ignored.
   // Response shape: { data: Journey[], meta: { total, page, size, pages } }.
   listPaged: (params: {
     filter: BookingFilter;
     page: number;
     size: number;
+    search?: string;
   }): Promise<PagedJourneys> =>
     api
-      .get<{ data: Journey[]; meta: PageMeta }>("/bookings/", { params })
+      .get<{ data: Journey[]; meta: PageMeta }>("/bookings/", {
+        params: { ...params, search: params.search || undefined },
+      })
       .then((r) => ({ journeys: r.data.data ?? [], meta: r.data.meta })),
 
   create: (payload: CreateBookingPayload) =>
