@@ -1,6 +1,8 @@
 "use client";
 
 import { useId, useRef, useState } from "react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { differenceInYears, format, isValid, parseISO } from "date-fns";
 import {
   BadgeCheck,
@@ -25,7 +27,8 @@ import { useProfile } from "@/hooks/useProfile";
 import { useUpdateProfile } from "@/hooks/useUpdateProfile";
 import { useUploadProfilePhoto } from "@/hooks/useUploadProfilePhoto";
 import { toApiError } from "@/lib/api";
-import type { UpdateProfilePayload } from "@/lib/profile";
+import { isKycVerified, kycStatusLabel, kycStatusTone } from "@/lib/kyc";
+import type { PersonalProfileFields } from "@/lib/profile";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -46,6 +49,16 @@ import { ProfileAvatar } from "@/components/profile/profile-avatar";
 import { PhotoCropDialog } from "@/components/profile/photo-crop-dialog";
 
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024; // 5 MB
+const KYC_HREF = "/profile/kyc";
+
+/**
+ * Deep link into the capture flow. Naming a document type both preselects it and
+ * unlocks it for replacement — without one, a type already on the account is
+ * locked in the wizard so the user cannot re-submit it by accident.
+ */
+function kycHref(documentType?: "AADHAAR" | "PAN") {
+  return documentType ? `${KYC_HREF}?document=${documentType}` : KYC_HREF;
+}
 
 type TabId = "personal" | "contact" | "security" | "kyc" | "notifications";
 
@@ -53,9 +66,15 @@ const TABS: { id: TabId; label: string; badge?: string }[] = [
   { id: "personal", label: "Personal" },
   { id: "contact", label: "Contact" },
   { id: "security", label: "Security", badge: "Coming soon" },
-  { id: "kyc", label: "KYC", badge: "Phase 2" },
+  { id: "kyc", label: "KYC" },
   { id: "notifications", label: "Notifications", badge: "Coming soon" },
 ];
+
+const DEFAULT_TAB: TabId = "personal";
+
+function isTabId(value: string | null): value is TabId {
+  return TABS.some((t) => t.id === value);
+}
 
 function getInitials(
   first?: string | null,
@@ -73,7 +92,22 @@ function getInitials(
 export default function ProfilePage() {
   const { data: profile } = useProfile();
   const storeUser = useAuthStore((s) => s.user);
-  const [tab, setTab] = useState<TabId>("personal");
+
+  // The tab lives in the URL (`/profile?tab=kyc`) so a deep link — or the back
+  // arrow out of a sub-flow like KYC capture — lands on the tab the user came
+  // from. Switching tabs `replace`s rather than pushes, so browsing the tabs
+  // doesn't fill the back stack.
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  const tab: TabId = isTabId(tabParam) ? tabParam : DEFAULT_TAB;
+
+  function selectTab(next: string) {
+    if (!isTabId(next) || next === tab) return;
+    router.replace(next === DEFAULT_TAB ? "/profile" : `/profile?tab=${next}`, {
+      scroll: false,
+    });
+  }
 
   const upload = useUploadProfilePhoto();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -183,11 +217,7 @@ export default function ProfilePage() {
       </header>
 
       {/* ── TABS ── */}
-      <Tabs
-        value={tab}
-        onValueChange={(v) => setTab(v as TabId)}
-        className="mt-8 gap-0"
-      >
+      <Tabs value={tab} onValueChange={selectTab} className="mt-8 gap-0">
         {/* Scrolls horizontally on narrow screens instead of overflowing the
             page; -mb-px keeps the active underline sitting on the border. */}
         <div className="overflow-x-auto border-b border-white/10 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -251,7 +281,7 @@ function PersonalTab() {
   const setUser = useAuthStore((s) => s.setUser);
 
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState<UpdateProfilePayload>({});
+  const [form, setForm] = useState<PersonalProfileFields>({});
 
   function startEdit() {
     if (!data) return;
@@ -276,8 +306,8 @@ function PersonalTab() {
   async function save() {
     if (!data) return;
     // Diff against the original — send ONLY changed keys, like the curl example.
-    const changed: UpdateProfilePayload = {};
-    (Object.keys(form) as (keyof UpdateProfilePayload)[]).forEach((k) => {
+    const changed: PersonalProfileFields = {};
+    (Object.keys(form) as (keyof PersonalProfileFields)[]).forEach((k) => {
       if (form[k] !== data[k]) changed[k] = form[k];
     });
     if (Object.keys(changed).length === 0) {
@@ -300,7 +330,7 @@ function PersonalTab() {
     }
   }
 
-  const set = (k: keyof UpdateProfilePayload) => (value: string) =>
+  const set = (k: keyof PersonalProfileFields) => (value: string) =>
     setForm((f) => ({ ...f, [k]: value }));
 
   return (
@@ -432,7 +462,7 @@ function PersonalTab() {
       <SectionCard
         title="Account & preferences"
         action={
-          <SectionAction icon={<Settings className="h-3.5 w-3.5" />} soon>
+          <SectionAction icon={<Settings className="h-3.5 w-3.5" />} disabled>
             Manage
           </SectionAction>
         }
@@ -570,14 +600,14 @@ function VerifyPill({ ok }: { ok?: boolean }) {
   );
 }
 
-/** Coloured pill for KYC status (PENDING / VERIFIED / REJECTED / …). */
+/** Coloured pill for `kyc_status` (PENDING / PASSED / FAILED). */
 function StatusPill({ status }: { status?: string }) {
   if (!status) return <>—</>;
-  const s = status.toUpperCase();
+  const tone = kycStatusTone(status);
   const cls =
-    s === "VERIFIED" || s === "APPROVED"
+    tone === "verified"
       ? "bg-emerald-500/15 text-emerald-300"
-      : s === "REJECTED"
+      : tone === "rejected"
         ? "bg-red-500/15 text-red-300"
         : "bg-amber-500/15 text-amber-300";
   return (
@@ -587,7 +617,7 @@ function StatusPill({ status }: { status?: string }) {
         cls
       )}
     >
-      {titleCase(status)}
+      {kycStatusLabel(status)}
     </span>
   );
 }
@@ -697,13 +727,16 @@ function KycTab() {
 
   return (
     <div className="space-y-6">
-      {/* Phase 2 banner */}
+      {/* How it works */}
       <div className="flex items-start gap-3 rounded-2xl border border-[#E8AA4D]/25 bg-gradient-to-r from-[#3a2a12] to-[#241a0c] px-5 py-4 text-sm">
         <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[#E8AA4D]" />
         <p className="text-white/80">
-          <span className="font-semibold text-[#F0BF6A]">Phase 2 feature.</span>{" "}
-          ID verification will unlock Tatkal auto-booking and higher per-ticket
-          passenger limits. Documents are encrypted and never shown in full.
+          <span className="font-semibold text-[#F0BF6A]">
+            Photograph your card.
+          </span>{" "}
+          We read the printed details for you, you check them, then an officer
+          approves it — that unlocks Tatkal, ladies quota and senior citizen
+          concession bookings. Documents are encrypted and never shown in full.
         </p>
       </div>
 
@@ -711,9 +744,10 @@ function KycTab() {
       <SectionCard
         title="Identity documents"
         action={
-          <SectionAction icon={<Plus className="h-3.5 w-3.5" />}>
+          <KycLink>
+            <Plus className="h-3.5 w-3.5" />
             Add document
-          </SectionAction>
+          </KycLink>
         }
       >
         {isLoading ? (
@@ -726,7 +760,13 @@ function KycTab() {
             <DocRow
               title="PAN card"
               meta={pan ?? "Not added · Required for Tatkal"}
-              trailing={pan ? kycDocBadge(kyc) : <UploadButton />}
+              trailing={
+                pan ? (
+                  <LinkedDocActions status={kyc} documentType="PAN" />
+                ) : (
+                  <UploadButton documentType="PAN" />
+                )
+              }
             />
             <DocRow
               title="Aadhaar"
@@ -735,7 +775,13 @@ function KycTab() {
                   ? groupAadhaar(aadhaar)
                   : "Not linked · Required for Tatkal"
               }
-              trailing={aadhaar ? kycDocBadge(kyc) : <UploadButton />}
+              trailing={
+                aadhaar ? (
+                  <LinkedDocActions status={kyc} documentType="AADHAAR" />
+                ) : (
+                  <UploadButton documentType="AADHAAR" />
+                )
+              }
             />
           </div>
         )}
@@ -767,7 +813,7 @@ function KycTab() {
             <StatusTile
               state={kycComplete ? "complete" : "pending"}
               label="KYC review"
-              status={titleCase(kyc) ?? "—"}
+              status={kyc ? kycStatusLabel(kyc) : "—"}
             />
           </div>
         )}
@@ -799,30 +845,66 @@ function DocRow({
   );
 }
 
-function UploadButton() {
+function UploadButton({ documentType }: { documentType: "AADHAAR" | "PAN" }) {
   return (
     <Button
+      asChild
       variant="outline"
       className="rounded-full border-white/15 bg-transparent text-sm text-white/90 hover:bg-white/[0.04]"
     >
-      <Upload className="h-4 w-4" />
-      Upload
+      <Link href={kycHref(documentType)}>
+        <Upload className="h-4 w-4" />
+        Upload
+      </Link>
     </Button>
   );
 }
 
-function isKycVerified(status?: string) {
-  const s = (status ?? "").toUpperCase();
-  return s === "VERIFIED" || s === "APPROVED";
+/** Amber text link into the KYC capture flow — matches `SectionAction`. */
+function KycLink({
+  documentType,
+  children,
+}: {
+  documentType?: "AADHAAR" | "PAN";
+  children: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={kycHref(documentType)}
+      className="inline-flex items-center gap-1.5 text-sm font-medium text-[#E8AA4D] hover:text-[#F0BF6A]"
+    >
+      {children}
+    </Link>
+  );
 }
 
-/** Maps the overall kyc_status to a document badge. */
+/**
+ * Status badge for a linked document, plus a way back into the capture flow —
+ * a rejected or still-pending document is the exact case where the user needs
+ * to send a better photo.
+ */
+function LinkedDocActions({
+  status,
+  documentType,
+}: {
+  status?: string;
+  documentType: "AADHAAR" | "PAN";
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      {kycDocBadge(status)}
+      {!isKycVerified(status) && (
+        <KycLink documentType={documentType}>Replace</KycLink>
+      )}
+    </div>
+  );
+}
+
+/** Maps the overall `kyc_status` to a document badge. */
 function kycDocBadge(status?: string) {
-  if (isKycVerified(status))
-    return <StatusBadge variant="verified">Verified</StatusBadge>;
-  if ((status ?? "").toUpperCase() === "REJECTED")
-    return <StatusBadge variant="rejected">Rejected</StatusBadge>;
-  return <StatusBadge variant="review">Under review</StatusBadge>;
+  const tone = kycStatusTone(status);
+  const variant = tone === "pending" ? "review" : tone;
+  return <StatusBadge variant={variant}>{kycStatusLabel(status)}</StatusBadge>;
 }
 
 /** "XXXXXXXX1236" → "XXXX XXXX 1236". */
