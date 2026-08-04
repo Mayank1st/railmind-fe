@@ -42,7 +42,12 @@ export type ProfileDetails = {
  * re-verification lands in Phase B (SMS infra), so a saved number is "unverified"
  * until then.
  */
-export type UpdateProfilePayload = Partial<
+/**
+ * The plain personal fields — every key here also exists on `ProfileDetails`
+ * with the same name, so an edit form can diff itself against the fetched
+ * profile key by key.
+ */
+export type PersonalProfileFields = Partial<
   Pick<
     ProfileDetails,
     | "first_name"
@@ -56,6 +61,29 @@ export type UpdateProfilePayload = Partial<
   >
 >;
 
+export type UpdateProfilePayload = PersonalProfileFields & {
+  /**
+   * Government IDs. Sent raw (no spaces/hyphens); the backend encrypts them and
+   * echoes the value masked. A number already linked to another account is
+   * rejected with RM-AUTH-006 (409).
+   *
+   * NOTE the spelling: update-profile takes `aadhaar_number` (two 'a's) while
+   * GET /auth/me returns `adhaar_number` (one). That is a pre-existing backend
+   * inconsistency — don't write one key and read the other.
+   */
+  aadhaar_number?: string;
+  pan_number?: string;
+};
+
+/**
+ * PATCH /auth/update-profile response. It is a ProfileDetails, except the ID
+ * number just written is echoed back under the two-'a' spelling, so both keys
+ * can appear on the same object.
+ */
+export type ProfileUpdateResult = ProfileDetails & {
+  aadhaar_number?: string | null;
+};
+
 export const profileApi = {
   // Backend wraps payloads as { data: ... }, so we unwrap r.data.data —
   // same as bookingsApi.list / authApi.me.
@@ -65,7 +93,7 @@ export const profileApi = {
   // PATCH = partial update: only the keys in `payload` are sent/changed.
   update: (payload: UpdateProfilePayload) =>
     api
-      .patch<{ data: ProfileDetails }>("/auth/update-profile", payload)
+      .patch<{ data: ProfileUpdateResult }>("/auth/update-profile", payload)
       .then((r) => r.data.data),
 
   // multipart/form-data upload. We pass a FormData body and let axios set the
